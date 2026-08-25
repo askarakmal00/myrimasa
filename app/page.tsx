@@ -1,0 +1,86 @@
+import { getProfile } from '@/lib/auth';
+import { redirect } from 'next/navigation';
+import { getPresenceStatus, PRESENCE_WINDOWS } from '@/lib/time';
+import { getMyReportToday } from './actions';
+import PresenceCard from '@/components/PresenceCard';
+import Header from '@/components/Header';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'KHDTK Litbanghut — Presensi Petugas',
+};
+
+export const dynamic = 'force-dynamic';
+
+export default async function HomePage() {
+  const profile = await getProfile();
+
+  // 1. If not logged in, go straight to login
+  if (!profile) {
+    redirect('/login');
+  }
+
+  // 2. If Admin, go straight to Admin Dashboard
+  if (profile.role === 'admin') {
+    redirect('/admin');
+  }
+
+  // 3. For Employee: fetch today's status for all 3 sessions
+  const serverNow = new Date();
+  const [morningReport, afternoonReport, eveningReport] = await Promise.all([
+    getMyReportToday('morning'),
+    getMyReportToday('afternoon'),
+    getMyReportToday('evening'),
+  ]);
+
+  const morningStatus = getPresenceStatus('morning', serverNow, morningReport);
+  const afternoonStatus = getPresenceStatus('afternoon', serverNow, afternoonReport);
+  const eveningStatus = getPresenceStatus('evening', serverNow, eveningReport);
+
+  return (
+    <div className="page">
+      <div className="container">
+        {/* Top Header Card */}
+        <Header profile={profile} />
+
+        {/* 3 Presence Cards: Pagi, Siang, Sore */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <PresenceCard
+            session="morning"
+            window={PRESENCE_WINDOWS.morning}
+            status={morningStatus}
+            report={morningReport ? { timestamp: morningReport.timestamp } : null}
+            isLoggedIn={true}
+          />
+
+          <PresenceCard
+            session="afternoon"
+            window={PRESENCE_WINDOWS.afternoon}
+            status={afternoonStatus}
+            report={afternoonReport ? { timestamp: afternoonReport.timestamp } : null}
+            isLoggedIn={true}
+          />
+
+          <PresenceCard
+            session="evening"
+            window={PRESENCE_WINDOWS.evening}
+            status={eveningStatus}
+            report={eveningReport ? { timestamp: eveningReport.timestamp } : null}
+            isLoggedIn={true}
+          />
+        </div>
+
+        {/* Bottom Notice Card */}
+        <div className="notice-card fade-in">
+          <span className="notice-icon">ⓘ</span>
+          <span>Pastikan Anda melakukan presensi sesuai jadwal yang telah ditentukan.</span>
+        </div>
+
+        {/* Footer */}
+        <div className="footer-text">
+          © 2026 KHDTK Litbanghut. Semua hak dilindungi.
+        </div>
+      </div>
+    </div>
+  );
+}
