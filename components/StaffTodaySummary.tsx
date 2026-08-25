@@ -41,16 +41,16 @@ export default function StaffTodaySummary({
     if (report) {
       return (
         <div style={{
-          padding: '6px 12px',
-          borderRadius: '8px',
+          width: '100%',
+          padding: '5px 2px',
+          borderRadius: '6px',
           background: '#dcfce7',
           color: '#166534',
           textAlign: 'center',
           border: '1px solid #bbf7d0',
-          minWidth: '80px',
         }}>
-          <div style={{ fontSize: '11px', fontWeight: '800' }}>✅ Hadir</div>
-          <div style={{ fontSize: '10px', fontWeight: '600', opacity: 0.9 }}>{formatWibTime(report.timestamp)}</div>
+          <div style={{ fontSize: '10px', fontWeight: '800' }}>✅ Hadir</div>
+          <div style={{ fontSize: '9px', fontWeight: '600', opacity: 0.95 }}>{formatWibTime(report.timestamp)}</div>
         </div>
       );
     }
@@ -58,16 +58,16 @@ export default function StaffTodaySummary({
     if (status === 'open') {
       return (
         <div style={{
-          padding: '6px 12px',
-          borderRadius: '8px',
+          width: '100%',
+          padding: '5px 2px',
+          borderRadius: '6px',
           background: '#fef3c7',
           color: '#b45309',
           textAlign: 'center',
           border: '1px solid #fde68a',
-          minWidth: '80px',
         }}>
-          <div style={{ fontSize: '11px', fontWeight: '800' }}>⌛ Dibuka</div>
-          <div style={{ fontSize: '10px', fontWeight: '600' }}>(Belum Isi)</div>
+          <div style={{ fontSize: '10px', fontWeight: '800' }}>⌛ Dibuka</div>
+          <div style={{ fontSize: '9px', fontWeight: '600' }}>(Belum Isi)</div>
         </div>
       );
     }
@@ -75,32 +75,32 @@ export default function StaffTodaySummary({
     if (status === 'closed') {
       return (
         <div style={{
-          padding: '6px 12px',
-          borderRadius: '8px',
+          width: '100%',
+          padding: '5px 2px',
+          borderRadius: '6px',
           background: '#fee2e2',
           color: '#991b1b',
           textAlign: 'center',
           border: '1px solid #fecaca',
-          minWidth: '80px',
         }}>
-          <div style={{ fontSize: '11px', fontWeight: '800' }}>✕ Lewat</div>
-          <div style={{ fontSize: '10px', fontWeight: '600' }}>Tidak Presensi</div>
+          <div style={{ fontSize: '10px', fontWeight: '800' }}>✕ Lewat</div>
+          <div style={{ fontSize: '9px', fontWeight: '600' }}>Tidak Presensi</div>
         </div>
       );
     }
 
     return (
       <div style={{
-        padding: '6px 12px',
-        borderRadius: '8px',
+        width: '100%',
+        padding: '5px 2px',
+        borderRadius: '6px',
         background: '#f1f5f9',
         color: '#64748b',
         textAlign: 'center',
         border: '1px solid var(--color-border)',
-        minWidth: '80px',
       }}>
-        <div style={{ fontSize: '11px', fontWeight: '700' }}>🔒 Terkunci</div>
-        <div style={{ fontSize: '10px' }}>Belum Dibuka</div>
+        <div style={{ fontSize: '10px', fontWeight: '700' }}>🔒 Terkunci</div>
+        <div style={{ fontSize: '9px' }}>Belum Buka</div>
       </div>
     );
   }
@@ -111,7 +111,7 @@ export default function StaffTodaySummary({
       borderRadius: 'var(--radius-xl)',
       border: '1px solid var(--color-border)',
       boxShadow: 'var(--shadow-card)',
-      padding: '24px 20px',
+      padding: '16px 14px',
       marginBottom: '16px',
     }}>
       {/* Card Header */}
@@ -120,29 +120,29 @@ export default function StaffTodaySummary({
         alignItems: 'center',
         justifyContent: 'space-between',
         flexWrap: 'wrap',
-        gap: '12px',
-        marginBottom: '20px',
+        gap: '8px',
+        marginBottom: '14px',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <div style={{
-            width: '40px',
-            height: '40px',
+            width: '36px',
+            height: '36px',
             borderRadius: '10px',
             background: '#f8fafc',
             border: '1px solid var(--color-border)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '20px',
+            fontSize: '18px',
             flexShrink: 0,
           }}>
             📋
           </div>
           <div>
-            <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', margin: 0 }}>
+            <h3 style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a', margin: 0 }}>
               Status Presensi Saya Hari Ini
             </h3>
-            <p style={{ fontSize: '13px', color: 'var(--color-text-secondary)', margin: '2px 0 0' }}>
+            <p style={{ fontSize: '11px', color: 'var(--color-text-secondary)', margin: '2px 0 0' }}>
               Ringkasan kehadiran seluruh sesi harian Anda
             </p>
           </div>
@@ -154,12 +154,12 @@ export default function StaffTodaySummary({
             <span style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '6px',
-              padding: '6px 16px',
+              gap: '4px',
+              padding: '4px 10px',
               borderRadius: '100px',
               background: '#dcfce7',
               color: '#166534',
-              fontSize: '12px',
+              fontSize: '11px',
               fontWeight: '800',
               border: '1px solid #bbf7d0',
             }}>
@@ -169,12 +169,12 @@ export default function StaffTodaySummary({
             <span style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '6px',
-              padding: '6px 16px',
+              gap: '4px',
+              padding: '4px 10px',
               borderRadius: '100px',
               background: '#fee2e2',
               color: '#991b1b',
-              fontSize: '12px',
+              fontSize: '11px',
               fontWeight: '800',
               border: '1px solid #fecaca',
             }}>
@@ -184,12 +184,12 @@ export default function StaffTodaySummary({
             <span style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '6px',
-              padding: '6px 16px',
+              gap: '4px',
+              padding: '4px 10px',
               borderRadius: '100px',
               background: '#fef3c7',
               color: '#b45309',
-              fontSize: '12px',
+              fontSize: '11px',
               fontWeight: '800',
               border: '1px solid #fde68a',
             }}>
@@ -199,43 +199,42 @@ export default function StaffTodaySummary({
         </div>
       </div>
 
-      {/* 3 Mini Session Cards (Side-by-Side Grid) */}
+      {/* 3 Mini Session Cards (Always Strictly 1 Row, 3 Columns) */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-        gap: '12px',
+        gridTemplateColumns: 'repeat(3, 1fr)',
+        gap: '6px',
       }}>
         {/* Sesi 1: PAGI */}
         <div style={{
           background: '#ffffff',
           border: '1px solid var(--color-border)',
-          borderRadius: '14px',
-          padding: '16px',
+          borderRadius: '12px',
+          padding: '10px 4px',
           display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '12px',
+          textAlign: 'center',
+          gap: '4px',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{
-              width: '42px',
-              height: '42px',
-              borderRadius: '50%',
-              background: '#fef9c3',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '20px',
-              flexShrink: 0,
-            }}>
-              ☀️
-            </div>
-            <div>
-              <div style={{ fontSize: '13px', fontWeight: '800', color: '#0f172a' }}>PAGI</div>
-              <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>06.00 - 08.00</div>
-            </div>
+          <div style={{
+            width: '32px',
+            height: '32px',
+            borderRadius: '50%',
+            background: '#fef9c3',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '16px',
+            flexShrink: 0,
+          }}>
+            ☀️
           </div>
           <div>
+            <div style={{ fontSize: '11px', fontWeight: '800', color: '#0f172a' }}>PAGI</div>
+            <div style={{ fontSize: '9px', color: '#64748b' }}>06.00 - 08.00</div>
+          </div>
+          <div style={{ width: '100%', marginTop: '2px' }}>
             {renderSessionPill(morningReport, morningStatus)}
           </div>
         </div>
@@ -244,33 +243,32 @@ export default function StaffTodaySummary({
         <div style={{
           background: '#ffffff',
           border: '1px solid var(--color-border)',
-          borderRadius: '14px',
-          padding: '16px',
+          borderRadius: '12px',
+          padding: '10px 4px',
           display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '12px',
+          textAlign: 'center',
+          gap: '4px',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{
-              width: '42px',
-              height: '42px',
-              borderRadius: '50%',
-              background: '#fef3c7',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '20px',
-              flexShrink: 0,
-            }}>
-              🌤️
-            </div>
-            <div>
-              <div style={{ fontSize: '13px', fontWeight: '800', color: '#0f172a' }}>SIANG</div>
-              <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>13.00 - 14.00</div>
-            </div>
+          <div style={{
+            width: '32px',
+            height: '32px',
+            borderRadius: '50%',
+            background: '#fef3c7',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '16px',
+            flexShrink: 0,
+          }}>
+            🌤️
           </div>
           <div>
+            <div style={{ fontSize: '11px', fontWeight: '800', color: '#0f172a' }}>SIANG</div>
+            <div style={{ fontSize: '9px', color: '#64748b' }}>13.00 - 14.00</div>
+          </div>
+          <div style={{ width: '100%', marginTop: '2px' }}>
             {renderSessionPill(afternoonReport, afternoonStatus)}
           </div>
         </div>
@@ -279,33 +277,32 @@ export default function StaffTodaySummary({
         <div style={{
           background: '#ffffff',
           border: '1px solid var(--color-border)',
-          borderRadius: '14px',
-          padding: '16px',
+          borderRadius: '12px',
+          padding: '10px 4px',
           display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '12px',
+          textAlign: 'center',
+          gap: '4px',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{
-              width: '42px',
-              height: '42px',
-              borderRadius: '50%',
-              background: '#e0e7ff',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '20px',
-              flexShrink: 0,
-            }}>
-              🌙
-            </div>
-            <div>
-              <div style={{ fontSize: '13px', fontWeight: '800', color: '#0f172a' }}>SORE</div>
-              <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>16.00 - 23.59</div>
-            </div>
+          <div style={{
+            width: '32px',
+            height: '32px',
+            borderRadius: '50%',
+            background: '#e0e7ff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '16px',
+            flexShrink: 0,
+          }}>
+            🌙
           </div>
           <div>
+            <div style={{ fontSize: '11px', fontWeight: '800', color: '#0f172a' }}>SORE</div>
+            <div style={{ fontSize: '9px', color: '#64748b' }}>16.00 - 23.59</div>
+          </div>
+          <div style={{ width: '100%', marginTop: '2px' }}>
             {renderSessionPill(eveningReport, eveningStatus)}
           </div>
         </div>
