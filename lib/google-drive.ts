@@ -1,6 +1,8 @@
 import { createAdminClient } from './supabase';
 
 const BUCKET_NAME = 'khdtk-reports';
+const DEFAULT_GAPPS_URL = 'https://script.google.com/macros/s/AKfycbxI3kiPZ9-BVYzkcY8Z6yxsIT3Scqv9bMYv316XaTi8i-ovEQ5LGfrocr1yvH3OjtCi/exec';
+const DEFAULT_DRIVE_FOLDER_ID = '1wEAofxSS3yAUS6OAQ02wOkFA7T07ty4N';
 
 export interface UploadResult {
   drive_file_id: string;
@@ -11,7 +13,7 @@ export interface UploadResult {
 
 /**
  * Upload a photo/video directly to Google Drive (via Google Apps Script Web App)
- * or fallback to Supabase Storage.
+ * Always prioritizes Google Drive storage into user's personal Google Drive.
  */
 export async function uploadFileToDrive(
   fileBuffer: Buffer,
@@ -21,10 +23,10 @@ export async function uploadFileToDrive(
   employeeName: string,
   uploadDate: Date
 ): Promise<UploadResult> {
-  const gappsUrl = process.env.GOOGLE_APPS_SCRIPT_URL;
-  const rootFolderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
+  const gappsUrl = process.env.GOOGLE_APPS_SCRIPT_URL || DEFAULT_GAPPS_URL;
+  const rootFolderId = process.env.GOOGLE_DRIVE_FOLDER_ID || DEFAULT_DRIVE_FOLDER_ID;
 
-  // 1. If Google Apps Script Web App URL is provided, upload directly to Google Drive (15GB+ quota)
+  // 1. Upload directly to Google Drive via Google Apps Script Web App
   if (gappsUrl && gappsUrl.trim().startsWith('http')) {
     try {
       const base64Data = fileBuffer.toString('base64');
@@ -46,7 +48,7 @@ export async function uploadFileToDrive(
 
       const json = await res.json();
       if (json.success && json.url) {
-        console.log(`Uploaded to Google Drive via Apps Script: ${json.url}`);
+        console.log(`Successfully uploaded to Google Drive: ${json.url}`);
         return {
           drive_file_id: json.fileId || `gdrive_${Date.now()}`,
           drive_url: json.url,
@@ -54,14 +56,14 @@ export async function uploadFileToDrive(
           file_type: mimeType,
         };
       } else {
-        console.warn('Apps Script upload returned non-success:', json);
+        console.warn('Google Apps Script upload response:', json);
       }
     } catch (gappsErr) {
-      console.error('Google Apps Script upload failed, falling back to Supabase:', gappsErr);
+      console.error('Google Apps Script upload error:', gappsErr);
     }
   }
 
-  // 2. Supabase Storage fallback
+  // 2. Emergency fallback to Supabase Storage only if Google Drive is completely unreachable
   const adminClient = createAdminClient();
 
   const year = String(uploadDate.getFullYear());
@@ -93,7 +95,7 @@ export async function uploadFileToDrive(
       file_type: mimeType,
     };
   } catch (err: any) {
-    console.error('File storage upload failed:', err);
+    console.error('Emergency storage upload failed:', err);
     return {
       drive_file_id: `file_${Date.now()}`,
       drive_url: `https://ikgfexlwalhofuxskrrw.supabase.co/storage/v1/object/public/${BUCKET_NAME}/${storagePath}`,

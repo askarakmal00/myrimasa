@@ -68,14 +68,15 @@ export default function AdminReportsPage() {
       return <span className="badge badge-morning">☀️ Pagi</span>;
     }
     if (session === 'afternoon') {
-      return <span className="badge" style={{ background: 'rgba(234, 179, 8, 0.15)', color: '#eab308' }}>🌤️ Siang</span>;
+      return <span className="badge" style={{ background: '#fef3c7', color: '#b45309' }}>🌤️ Siang</span>;
     }
     return <span className="badge badge-evening">🌙 Sore</span>;
   }
 
   return (
     <div>
-      <div className="page-header flex justify-between items-center">
+      {/* Page Header */}
+      <div className="page-header">
         <div>
           <h1 className="page-title">Laporan Presensi</h1>
           <p className="page-subtitle">{total} laporan ditemukan</p>
@@ -164,7 +165,7 @@ export default function AdminReportsPage() {
       {/* Table */}
       {loading ? (
         <div style={{ textAlign: 'center', padding: '40px' }}>
-          <span className="spinner spinner-green" style={{ width: '32px', height: '32px' }} />
+          <span className="spinner" style={{ width: '32px', height: '32px', borderColor: '#cbd5e1', borderTopColor: '#1b4d3e' }} />
         </div>
       ) : (
         <div className="table-wrapper">

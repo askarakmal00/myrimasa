@@ -45,22 +45,24 @@ export default async function AdminDashboardPage() {
 
   function getBadge(session: string) {
     if (session === 'morning') return <span className="badge badge-morning">☀️ Pagi</span>;
-    if (session === 'afternoon') return <span className="badge" style={{ background: 'rgba(234, 179, 8, 0.15)', color: '#eab308' }}>🌤️ Siang</span>;
+    if (session === 'afternoon') return <span className="badge" style={{ background: '#fef3c7', color: '#b45309' }}>🌤️ Siang</span>;
     return <span className="badge badge-evening">🌙 Sore</span>;
   }
 
   return (
     <div>
       <div className="page-header">
-        <h1 className="page-title">Dashboard</h1>
-        <p className="page-subtitle">{todayLabel}</p>
+        <div>
+          <h1 className="page-title">Dashboard</h1>
+          <p className="page-subtitle">{todayLabel}</p>
+        </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
+      {/* 5 Stats Cards Grid */}
+      <div className="stats-grid">
         <div className="stat-card">
           <div className="stat-card-label">Presensi Pagi Hari Ini</div>
-          <div className="stat-card-value" style={{ color: 'var(--color-warning)' }}>
+          <div className="stat-card-value" style={{ color: '#d97706' }}>
             {todayMorning ?? 0}
           </div>
           <div className="stat-card-sub">☀️ 06.00 - 08.00</div>
@@ -68,7 +70,7 @@ export default async function AdminDashboardPage() {
 
         <div className="stat-card">
           <div className="stat-card-label">Presensi Siang Hari Ini</div>
-          <div className="stat-card-value" style={{ color: '#eab308' }}>
+          <div className="stat-card-value" style={{ color: '#b45309' }}>
             {todayAfternoon ?? 0}
           </div>
           <div className="stat-card-sub">🌤️ 13.00 - 14.00</div>
@@ -76,7 +78,7 @@ export default async function AdminDashboardPage() {
 
         <div className="stat-card">
           <div className="stat-card-label">Presensi Sore Hari Ini</div>
-          <div className="stat-card-value" style={{ color: '#818cf8' }}>
+          <div className="stat-card-value" style={{ color: '#4338ca' }}>
             {todayEvening ?? 0}
           </div>
           <div className="stat-card-sub">🌙 16.00 - 23.59</div>
@@ -84,7 +86,7 @@ export default async function AdminDashboardPage() {
 
         <div className="stat-card">
           <div className="stat-card-label">Total Laporan</div>
-          <div className="stat-card-value" style={{ color: 'var(--color-primary)' }}>
+          <div className="stat-card-value" style={{ color: '#1e5631' }}>
             {totalReports ?? 0}
           </div>
           <div className="stat-card-sub">📋 Semua waktu</div>
@@ -92,16 +94,16 @@ export default async function AdminDashboardPage() {
 
         <div className="stat-card">
           <div className="stat-card-label">Total Karyawan</div>
-          <div className="stat-card-value">
+          <div className="stat-card-value" style={{ color: '#0f172a' }}>
             {totalEmployees ?? 0}
           </div>
           <div className="stat-card-sub">👤 Terdaftar</div>
         </div>
       </div>
 
-      {/* Recent reports */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-        <h2 style={{ fontSize: '16px', fontWeight: '700' }}>Laporan Terbaru</h2>
+      {/* Recent reports section */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', marginTop: '16px' }}>
+        <h2 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a' }}>Laporan Terbaru</h2>
         <Link href="/admin/reports" className="btn btn-secondary btn-sm">Lihat Semua →</Link>
       </div>
 
@@ -127,8 +129,8 @@ export default async function AdminDashboardPage() {
                     })}
                   </td>
                   <td>
-                    <div style={{ fontWeight: '600', fontSize: '13px' }}>{r.profiles?.name}</div>
-                    <div style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>{r.profiles?.email}</div>
+                    <div style={{ fontWeight: '700', fontSize: '13px' }}>{r.profiles?.name}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>{r.profiles?.email}</div>
                   </td>
                   <td className="muted truncate">{r.locations?.name || '—'}</td>
                   <td>
@@ -147,7 +149,7 @@ export default async function AdminDashboardPage() {
               ))
             ) : (
               <tr>
-                <td colSpan={5} className="text-center muted" style={{ padding: '32px' }}>
+                <td colSpan={5} className="text-center muted" style={{ padding: '36px' }}>
                   Belum ada laporan
                 </td>
               </tr>

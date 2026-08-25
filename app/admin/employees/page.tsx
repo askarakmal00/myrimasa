@@ -88,7 +88,7 @@ export default function AdminEmployeesPage() {
 
   return (
     <div>
-      <div className="page-header flex justify-between items-center">
+      <div className="page-header">
         <div>
           <h1 className="page-title">Manajemen Karyawan</h1>
           <p className="page-subtitle">{employees.length} akun terdaftar di sistem</p>
@@ -105,7 +105,7 @@ export default function AdminEmployeesPage() {
       {/* Table */}
       {loading ? (
         <div style={{ textAlign: 'center', padding: '40px' }}>
-          <span className="spinner spinner-green" style={{ width: '32px', height: '32px' }} />
+          <span className="spinner" style={{ width: '32px', height: '32px', borderColor: '#cbd5e1', borderTopColor: '#1b4d3e' }} />
         </div>
       ) : (
         <div className="table-wrapper">
@@ -127,26 +127,26 @@ export default function AdminEmployeesPage() {
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <div style={{
-                          width: '32px', height: '32px', borderRadius: '50%', flexShrink: 0,
+                          width: '34px', height: '34px', borderRadius: '50%', flexShrink: 0,
                           background: e.role === 'admin'
-                            ? 'linear-gradient(135deg, #4f46e5, #818cf8)'
-                            : 'linear-gradient(135deg, var(--color-primary-dark), var(--color-primary))',
+                            ? '#3730a3'
+                            : '#1e5631',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                           fontSize: '13px', fontWeight: '700', color: 'white',
                         }}>
                           {e.name?.charAt(0)?.toUpperCase()}
                         </div>
-                        <span style={{ fontWeight: '600', fontSize: '13px' }}>{e.name}</span>
+                        <span style={{ fontWeight: '700', fontSize: '13px' }}>{e.name}</span>
                       </div>
                     </td>
                     <td className="muted" style={{ fontSize: '13px' }}>{e.email}</td>
                     <td>
-                      <span className={`badge ${e.role === 'admin' ? 'badge-done' : 'badge-submitted'}`}>
+                      <span className={`badge ${e.role === 'admin' ? 'badge-evening' : 'badge-morning'}`}>
                         {e.role === 'admin' ? '🛡️ Admin' : '👤 Petugas'}
                       </span>
                     </td>
                     <td>
-                      <span className={`badge ${e.status === 'active' ? 'badge-submitted' : 'badge-missed'}`}>
+                      <span className="badge badge-morning">
                         {e.status === 'active' ? 'Aktif' : 'Nonaktif'}
                       </span>
                     </td>
@@ -156,7 +156,7 @@ export default function AdminEmployeesPage() {
                     <td>
                       <button
                         className="btn btn-ghost btn-sm"
-                        style={{ color: 'var(--color-closed)' }}
+                        style={{ color: '#dc2626' }}
                         onClick={() => handleDelete(e.id, e.name)}
                         title="Hapus Akun"
                       >
