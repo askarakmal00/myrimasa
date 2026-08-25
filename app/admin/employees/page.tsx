@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Profile } from '@/lib/types';
+import { Profile, Location } from '@/lib/types';
 
 export default function AdminEmployeesPage() {
   const [employees, setEmployees] = useState<Profile[]>([]);
+  const [locations, setLocations] = useState<Location[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
 
@@ -13,6 +14,7 @@ export default function AdminEmployeesPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<'employee' | 'admin'>('employee');
+  const [locationId, setLocationId] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
   const [formSuccess, setFormSuccess] = useState('');
@@ -31,6 +33,7 @@ export default function AdminEmployeesPage() {
 
   useEffect(() => {
     fetchEmployees();
+    fetch('/api/locations').then(r => r.json()).then(d => setLocations(Array.isArray(d) ? d : []));
   }, []);
 
   async function handleAddEmployee(e: React.FormEvent) {
@@ -43,7 +46,13 @@ export default function AdminEmployeesPage() {
       const res = await fetch('/api/admin/employees', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, role }),
+        body: JSON.stringify({
+          name,
+          email,
+          password,
+          role,
+          location_id: role === 'employee' ? locationId : null,
+        }),
       });
 
       const json = await res.json();
@@ -59,6 +68,7 @@ export default function AdminEmployeesPage() {
       setEmail('');
       setPassword('');
       setRole('employee');
+      setLocationId('');
       fetchEmployees();
       setTimeout(() => {
         setShowModal(false);
@@ -90,7 +100,7 @@ export default function AdminEmployeesPage() {
     <div>
       <div className="page-header">
         <div>
-          <h1 className="page-title">Manajemen Karyawan</h1>
+          <h1 className="page-title">Manajemen Karyawan & Staff</h1>
           <p className="page-subtitle">{employees.length} akun terdaftar di sistem</p>
         </div>
         <button
@@ -114,6 +124,7 @@ export default function AdminEmployeesPage() {
               <tr>
                 <th>Nama</th>
                 <th>Email</th>
+                <th>Lokasi KHDTK Penugasan</th>
                 <th>Role</th>
                 <th>Status</th>
                 <th>Terdaftar</th>
@@ -141,6 +152,26 @@ export default function AdminEmployeesPage() {
                     </td>
                     <td className="muted" style={{ fontSize: '13px' }}>{e.email}</td>
                     <td>
+                      {e.location_name ? (
+                        <span style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          padding: '4px 10px',
+                          borderRadius: '6px',
+                          background: '#f8fafc',
+                          border: '1px solid var(--color-border)',
+                          fontSize: '12px',
+                          fontWeight: '600',
+                          color: '#0f172a'
+                        }}>
+                          📍 {e.location_name}
+                        </span>
+                      ) : (
+                        <span className="muted" style={{ fontSize: '12px' }}>—</span>
+                      )}
+                    </td>
+                    <td>
                       <span className={`badge ${e.role === 'admin' ? 'badge-evening' : 'badge-morning'}`}>
                         {e.role === 'admin' ? '🛡️ Admin' : '👤 Staff'}
                       </span>
@@ -167,7 +198,7 @@ export default function AdminEmployeesPage() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={6} className="text-center muted" style={{ padding: '40px' }}>
+                  <td colSpan={7} className="text-center muted" style={{ padding: '40px' }}>
                     Belum ada karyawan terdaftar. Klik tombol <strong>"Tambah Karyawan Baru"</strong> di atas.
                   </td>
                 </tr>
@@ -180,7 +211,7 @@ export default function AdminEmployeesPage() {
       {/* Modal Tambah Karyawan */}
       {showModal && (
         <div className="modal-overlay centered">
-          <div className="modal centered-modal" style={{ maxWidth: '440px' }}>
+          <div className="modal centered-modal" style={{ maxWidth: '460px' }}>
             <div className="flex justify-between items-center mb-16">
               <h2 className="modal-title">➕ Tambah Akun Baru</h2>
               <button
@@ -193,7 +224,7 @@ export default function AdminEmployeesPage() {
             </div>
 
             <p className="modal-subtitle">
-              Akun akan langsung aktif tanpa perlu konfirmasi email.
+              Akun akan langsung aktif dan terhubung ke lokasi KHDTK yang dipilih.
             </p>
 
             {formError && (
@@ -263,6 +294,27 @@ export default function AdminEmployeesPage() {
                   <option value="admin">🛡️ Administrator (Admin)</option>
                 </select>
               </div>
+
+              {role === 'employee' && (
+                <div className="form-group">
+                  <label className="form-label" htmlFor="modal-emp-location">Lokasi KHDTK Penugasan</label>
+                  <select
+                    id="modal-emp-location"
+                    className="form-select"
+                    value={locationId}
+                    onChange={e => setLocationId(e.target.value)}
+                    required
+                  >
+                    <option value="">-- Pilih Lokasi KHDTK --</option>
+                    {locations.map(loc => (
+                      <option key={loc.id} value={loc.id}>📍 {loc.name}</option>
+                    ))}
+                  </select>
+                  <div className="form-hint" style={{ marginTop: '4px', fontSize: '11px' }}>
+                    Staf tidak perlu memilih lokasi lagi saat presensi.
+                  </div>
+                </div>
+              )}
 
               <div className="flex gap-12 mt-20">
                 <button

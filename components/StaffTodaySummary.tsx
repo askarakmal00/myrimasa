@@ -34,115 +34,23 @@ export default function StaffTodaySummary({
   if (afternoonReport) completedCount++;
   if (eveningReport) completedCount++;
 
-  // Desktop Pill
-  function renderDesktopPill(
-    report: ReportInfo | null,
-    status: 'open' | 'locked' | 'closed' | 'done'
-  ) {
-    if (report) {
-      return (
-        <span style={{
-          display: 'inline-flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '2px',
-          padding: '6px 12px',
-          borderRadius: '8px',
-          background: '#dcfce7',
-          color: '#166534',
-          fontSize: '11px',
-          fontWeight: '700',
-          border: '1px solid #bbf7d0',
-          whiteSpace: 'nowrap',
-        }}>
-          <span>✅ Sudah ({formatWibTime(report.timestamp)})</span>
-          {report.locationName && (
-            <span style={{ fontSize: '10px', color: '#15803d', fontWeight: '500' }}>
-              📍 {report.locationName}
-            </span>
-          )}
-        </span>
-      );
-    }
-
-    if (status === 'open') {
-      return (
-        <span style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '4px',
-          padding: '6px 12px',
-          borderRadius: '8px',
-          background: '#fef3c7',
-          color: '#b45309',
-          fontSize: '11px',
-          fontWeight: '700',
-          border: '1px solid #fde68a',
-          whiteSpace: 'nowrap',
-        }}>
-          ⏳ Sedang Dibuka (Belum)
-        </span>
-      );
-    }
-
-    if (status === 'closed') {
-      return (
-        <span style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '4px',
-          padding: '6px 12px',
-          borderRadius: '8px',
-          background: '#fee2e2',
-          color: '#991b1b',
-          fontSize: '11px',
-          fontWeight: '700',
-          border: '1px solid #fecaca',
-          whiteSpace: 'nowrap',
-        }}>
-          ❌ Tidak Presensi
-        </span>
-      );
-    }
-
-    return (
-      <span style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '4px',
-        padding: '6px 12px',
-        borderRadius: '8px',
-        background: '#f1f5f9',
-        color: '#64748b',
-        fontSize: '11px',
-        fontWeight: '600',
-        whiteSpace: 'nowrap',
-      }}>
-        🔒 Belum Dibuka
-      </span>
-    );
-  }
-
-  // Mobile Pill (Compact, fits all phone screens perfectly)
-  function renderMobilePill(
+  function renderSessionPill(
     report: ReportInfo | null,
     status: 'open' | 'locked' | 'closed' | 'done'
   ) {
     if (report) {
       return (
         <div style={{
-          width: '100%',
-          padding: '6px 4px',
-          borderRadius: '6px',
+          padding: '6px 12px',
+          borderRadius: '8px',
           background: '#dcfce7',
           color: '#166534',
-          fontSize: '10px',
-          fontWeight: '800',
-          border: '1px solid #bbf7d0',
           textAlign: 'center',
+          border: '1px solid #bbf7d0',
+          minWidth: '80px',
         }}>
-          <div>✅ Sudah</div>
-          <div style={{ fontSize: '9px', fontWeight: '600', opacity: 0.9 }}>{formatWibTime(report.timestamp)}</div>
+          <div style={{ fontSize: '11px', fontWeight: '800' }}>✅ Hadir</div>
+          <div style={{ fontSize: '10px', fontWeight: '600', opacity: 0.9 }}>{formatWibTime(report.timestamp)}</div>
         </div>
       );
     }
@@ -150,18 +58,16 @@ export default function StaffTodaySummary({
     if (status === 'open') {
       return (
         <div style={{
-          width: '100%',
-          padding: '6px 4px',
-          borderRadius: '6px',
+          padding: '6px 12px',
+          borderRadius: '8px',
           background: '#fef3c7',
           color: '#b45309',
-          fontSize: '10px',
-          fontWeight: '800',
-          border: '1px solid #fde68a',
           textAlign: 'center',
+          border: '1px solid #fde68a',
+          minWidth: '80px',
         }}>
-          <div>⏳ Dibuka</div>
-          <div style={{ fontSize: '9px', fontWeight: '600' }}>(Belum Isi)</div>
+          <div style={{ fontSize: '11px', fontWeight: '800' }}>⌛ Dibuka</div>
+          <div style={{ fontSize: '10px', fontWeight: '600' }}>(Belum Isi)</div>
         </div>
       );
     }
@@ -169,36 +75,32 @@ export default function StaffTodaySummary({
     if (status === 'closed') {
       return (
         <div style={{
-          width: '100%',
-          padding: '6px 4px',
-          borderRadius: '6px',
+          padding: '6px 12px',
+          borderRadius: '8px',
           background: '#fee2e2',
           color: '#991b1b',
-          fontSize: '10px',
-          fontWeight: '800',
-          border: '1px solid #fecaca',
           textAlign: 'center',
+          border: '1px solid #fecaca',
+          minWidth: '80px',
         }}>
-          <div>❌ Lewat</div>
-          <div style={{ fontSize: '9px', fontWeight: '600' }}>Tidak Presensi</div>
+          <div style={{ fontSize: '11px', fontWeight: '800' }}>✕ Lewat</div>
+          <div style={{ fontSize: '10px', fontWeight: '600' }}>Tidak Presensi</div>
         </div>
       );
     }
 
     return (
       <div style={{
-        width: '100%',
-        padding: '6px 4px',
-        borderRadius: '6px',
+        padding: '6px 12px',
+        borderRadius: '8px',
         background: '#f1f5f9',
         color: '#64748b',
-        fontSize: '10px',
-        fontWeight: '700',
-        border: '1px solid var(--color-border)',
         textAlign: 'center',
+        border: '1px solid var(--color-border)',
+        minWidth: '80px',
       }}>
-        <div>🔒 Terkunci</div>
-        <div style={{ fontSize: '9px' }}>Belum Buka</div>
+        <div style={{ fontSize: '11px', fontWeight: '700' }}>🔒 Terkunci</div>
+        <div style={{ fontSize: '10px' }}>Belum Dibuka</div>
       </div>
     );
   }
@@ -209,44 +111,55 @@ export default function StaffTodaySummary({
       borderRadius: 'var(--radius-xl)',
       border: '1px solid var(--color-border)',
       boxShadow: 'var(--shadow-card)',
-      overflow: 'hidden',
+      padding: '24px 20px',
       marginBottom: '16px',
     }}>
       {/* Card Header */}
       <div style={{
-        padding: '14px 16px',
-        borderBottom: '1px solid var(--color-border-subtle)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         flexWrap: 'wrap',
-        gap: '8px',
-        background: '#fafafa',
+        gap: '12px',
+        marginBottom: '20px',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '18px' }}>📋</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{
+            width: '40px',
+            height: '40px',
+            borderRadius: '10px',
+            background: '#f8fafc',
+            border: '1px solid var(--color-border)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '20px',
+            flexShrink: 0,
+          }}>
+            📋
+          </div>
           <div>
-            <h3 style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a', margin: 0 }}>
+            <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', margin: 0 }}>
               Status Presensi Saya Hari Ini
             </h3>
-            <p style={{ fontSize: '11px', color: 'var(--color-text-secondary)', margin: 0 }}>
+            <p style={{ fontSize: '13px', color: 'var(--color-text-secondary)', margin: '2px 0 0' }}>
               Ringkasan kehadiran seluruh sesi harian Anda
             </p>
           </div>
         </div>
 
-        {/* Total Status Badge */}
+        {/* Total Status Pill Badge */}
         <div>
           {completedCount === 3 ? (
             <span style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '4px',
-              padding: '4px 10px',
+              gap: '6px',
+              padding: '6px 16px',
               borderRadius: '100px',
               background: '#dcfce7',
               color: '#166534',
-              fontSize: '11px',
+              fontSize: '12px',
               fontWeight: '800',
               border: '1px solid #bbf7d0',
             }}>
@@ -256,213 +169,146 @@ export default function StaffTodaySummary({
             <span style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '4px',
-              padding: '4px 10px',
+              gap: '6px',
+              padding: '6px 16px',
               borderRadius: '100px',
               background: '#fee2e2',
               color: '#991b1b',
-              fontSize: '11px',
+              fontSize: '12px',
               fontWeight: '800',
               border: '1px solid #fecaca',
             }}>
-              ❌ BELUM PRESENSI (0/3)
+              ✕ BELUM PRESENSI (0/3)
             </span>
           ) : (
             <span style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '4px',
-              padding: '4px 10px',
+              gap: '6px',
+              padding: '6px 16px',
               borderRadius: '100px',
               background: '#fef3c7',
               color: '#b45309',
-              fontSize: '11px',
+              fontSize: '12px',
               fontWeight: '800',
               border: '1px solid #fde68a',
             }}>
-              ⏳ {completedCount} / 3 SESI
+              ⏳ {completedCount} / 3 SESI SELESAI
             </span>
           )}
         </div>
       </div>
 
-      {/* 1. Mobile View (< 768px): 3-Column Responsive Grid (No horizontal scrolling!) */}
-      <div className="staff-summary-mobile">
+      {/* 3 Mini Session Cards (Side-by-Side Grid) */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+        gap: '12px',
+      }}>
+        {/* Sesi 1: PAGI */}
         <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: '8px',
-          padding: '12px',
+          background: '#ffffff',
+          border: '1px solid var(--color-border)',
+          borderRadius: '14px',
+          padding: '16px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '12px',
         }}>
-          {/* Pagi */}
-          <div style={{
-            background: '#ffffff',
-            border: '1px solid var(--color-border)',
-            borderRadius: '10px',
-            padding: '10px 6px',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '4px',
-          }}>
-            <span style={{ fontSize: '11px', fontWeight: '800', color: '#d97706' }}>☀️ PAGI</span>
-            <span style={{ fontSize: '10px', color: '#64748b', marginBottom: '4px' }}>06.00-08.00</span>
-            {renderMobilePill(morningReport, morningStatus)}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{
+              width: '42px',
+              height: '42px',
+              borderRadius: '50%',
+              background: '#fef9c3',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '20px',
+              flexShrink: 0,
+            }}>
+              ☀️
+            </div>
+            <div>
+              <div style={{ fontSize: '13px', fontWeight: '800', color: '#0f172a' }}>PAGI</div>
+              <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>06.00 - 08.00</div>
+            </div>
           </div>
-
-          {/* Siang */}
-          <div style={{
-            background: '#ffffff',
-            border: '1px solid var(--color-border)',
-            borderRadius: '10px',
-            padding: '10px 6px',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '4px',
-          }}>
-            <span style={{ fontSize: '11px', fontWeight: '800', color: '#b45309' }}>🌤️ SIANG</span>
-            <span style={{ fontSize: '10px', color: '#64748b', marginBottom: '4px' }}>13.00-14.00</span>
-            {renderMobilePill(afternoonReport, afternoonStatus)}
-          </div>
-
-          {/* Sore */}
-          <div style={{
-            background: '#ffffff',
-            border: '1px solid var(--color-border)',
-            borderRadius: '10px',
-            padding: '10px 6px',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '4px',
-          }}>
-            <span style={{ fontSize: '11px', fontWeight: '800', color: '#4338ca' }}>🌙 SORE</span>
-            <span style={{ fontSize: '10px', color: '#64748b', marginBottom: '4px' }}>16.00-23.59</span>
-            {renderMobilePill(eveningReport, eveningStatus)}
+          <div>
+            {renderSessionPill(morningReport, morningStatus)}
           </div>
         </div>
-      </div>
 
-      {/* 2. Desktop View (>= 768px): Full Table View */}
-      <div className="staff-summary-desktop">
-        <table style={{
-          width: '100%',
-          borderCollapse: 'collapse',
-          fontSize: '13px',
-          textAlign: 'left',
+        {/* Sesi 2: SIANG */}
+        <div style={{
+          background: '#ffffff',
+          border: '1px solid var(--color-border)',
+          borderRadius: '14px',
+          padding: '16px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '12px',
         }}>
-          <thead>
-            <tr style={{ background: '#f8fafc', borderBottom: '1px solid var(--color-border)' }}>
-              <th style={{ padding: '12px 18px', fontSize: '11px', fontWeight: '800', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-                Karyawan / Staff
-              </th>
-              <th style={{ padding: '12px 18px', fontSize: '11px', fontWeight: '800', color: '#d97706', textTransform: 'uppercase', letterSpacing: '0.4px', textAlign: 'center' }}>
-                ☀️ Pagi (06.00 - 08.00)
-              </th>
-              <th style={{ padding: '12px 18px', fontSize: '11px', fontWeight: '800', color: '#b45309', textTransform: 'uppercase', letterSpacing: '0.4px', textAlign: 'center' }}>
-                🌤️ Siang (13.00 - 14.00)
-              </th>
-              <th style={{ padding: '12px 18px', fontSize: '11px', fontWeight: '800', color: '#4338ca', textTransform: 'uppercase', letterSpacing: '0.4px', textAlign: 'center' }}>
-                🌙 Sore (16.00 - 23.59)
-              </th>
-              <th style={{ padding: '12px 18px', fontSize: '11px', fontWeight: '800', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.4px', textAlign: 'center' }}>
-                Status Hari Ini
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              {/* Profile */}
-              <td style={{ padding: '16px 18px', verticalAlign: 'middle' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div style={{
-                    width: '36px',
-                    height: '36px',
-                    borderRadius: '50%',
-                    background: '#1e5631',
-                    color: '#ffffff',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '14px',
-                    fontWeight: '800',
-                    flexShrink: 0,
-                  }}>
-                    {name.charAt(0).toUpperCase()}
-                  </div>
-                  <div>
-                    <div style={{ fontWeight: '800', fontSize: '13px', color: '#0f172a' }}>
-                      {name}
-                    </div>
-                    <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>
-                      {email}
-                    </div>
-                  </div>
-                </div>
-              </td>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{
+              width: '42px',
+              height: '42px',
+              borderRadius: '50%',
+              background: '#fef3c7',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '20px',
+              flexShrink: 0,
+            }}>
+              🌤️
+            </div>
+            <div>
+              <div style={{ fontSize: '13px', fontWeight: '800', color: '#0f172a' }}>SIANG</div>
+              <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>13.00 - 14.00</div>
+            </div>
+          </div>
+          <div>
+            {renderSessionPill(afternoonReport, afternoonStatus)}
+          </div>
+        </div>
 
-              {/* Pagi */}
-              <td style={{ padding: '16px 14px', textAlign: 'center', verticalAlign: 'middle' }}>
-                {renderDesktopPill(morningReport, morningStatus)}
-              </td>
-
-              {/* Siang */}
-              <td style={{ padding: '16px 14px', textAlign: 'center', verticalAlign: 'middle' }}>
-                {renderDesktopPill(afternoonReport, afternoonStatus)}
-              </td>
-
-              {/* Sore */}
-              <td style={{ padding: '16px 14px', textAlign: 'center', verticalAlign: 'middle' }}>
-                {renderDesktopPill(eveningReport, eveningStatus)}
-              </td>
-
-              {/* Total */}
-              <td style={{ padding: '16px 14px', textAlign: 'center', verticalAlign: 'middle' }}>
-                {completedCount === 3 ? (
-                  <span style={{
-                    display: 'inline-block',
-                    padding: '6px 12px',
-                    borderRadius: '8px',
-                    background: '#dcfce7',
-                    color: '#166534',
-                    fontSize: '11px',
-                    fontWeight: '800',
-                    border: '1px solid #bbf7d0',
-                  }}>
-                    ✅ LENGKAP (3/3)
-                  </span>
-                ) : completedCount === 0 ? (
-                  <span style={{
-                    display: 'inline-block',
-                    padding: '6px 12px',
-                    borderRadius: '8px',
-                    background: '#fee2e2',
-                    color: '#991b1b',
-                    fontSize: '11px',
-                    fontWeight: '800',
-                    border: '1px solid #fecaca',
-                  }}>
-                    ❌ BELUM (0/3)
-                  </span>
-                ) : (
-                  <span style={{
-                    display: 'inline-block',
-                    padding: '6px 12px',
-                    borderRadius: '8px',
-                    background: '#fef3c7',
-                    color: '#b45309',
-                    fontSize: '11px',
-                    fontWeight: '800',
-                    border: '1px solid #fde68a',
-                  }}>
-                    ⏳ {completedCount}/3 Sesi
-                  </span>
-                )}
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        {/* Sesi 3: SORE */}
+        <div style={{
+          background: '#ffffff',
+          border: '1px solid var(--color-border)',
+          borderRadius: '14px',
+          padding: '16px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '12px',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{
+              width: '42px',
+              height: '42px',
+              borderRadius: '50%',
+              background: '#e0e7ff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '20px',
+              flexShrink: 0,
+            }}>
+              🌙
+            </div>
+            <div>
+              <div style={{ fontSize: '13px', fontWeight: '800', color: '#0f172a' }}>SORE</div>
+              <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>16.00 - 23.59</div>
+            </div>
+          </div>
+          <div>
+            {renderSessionPill(eveningReport, eveningStatus)}
+          </div>
+        </div>
       </div>
     </div>
   );

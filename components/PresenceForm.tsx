@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import { Location, Profile, SessionType, GpsData } from '@/lib/types';
 import Link from 'next/link';
 
@@ -17,11 +16,10 @@ const sessionConfig: Record<SessionType, { label: string; emoji: string }> = {
 };
 
 export default function PresenceForm({ session, profile }: PresenceFormProps) {
-  const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form state
-  const [locationId, setLocationId] = useState('');
+  const [locationId, setLocationId] = useState(profile.location_id || '');
   const [routineActivity, setRoutineActivity] = useState('');
   const [incidentActivity, setIncidentActivity] = useState('Nihil');
   const [fieldCondition, setFieldCondition] = useState('');
@@ -45,12 +43,25 @@ export default function PresenceForm({ session, profile }: PresenceFormProps) {
   const sessionLabel = currentConfig.label;
   const sessionEmoji = currentConfig.emoji;
 
-  // Fetch locations
+  // Fetch locations if needed or for name lookup
   useEffect(() => {
     fetch('/api/locations')
       .then(r => r.json())
-      .then(data => setLocations(Array.isArray(data) ? data : []));
-  }, []);
+      .then(data => {
+        const list = Array.isArray(data) ? data : [];
+        setLocations(list);
+        if (!locationId && profile.location_id) {
+          setLocationId(profile.location_id);
+        } else if (!locationId && profile.location_name) {
+          const match = list.find((l: Location) => l.name.toLowerCase() === profile.location_name?.toLowerCase());
+          if (match) setLocationId(match.id);
+        }
+      });
+  }, [locationId, profile.location_id, profile.location_name]);
+
+  // Find user's location name
+  const matchedLocation = locations.find(l => l.id === locationId);
+  const displayLocationName = profile.location_name || matchedLocation?.name || (profile.location_id ? 'Lokasi Penugasan' : null);
 
   // Auto-request GPS
   const requestGps = useCallback(() => {
@@ -167,8 +178,9 @@ export default function PresenceForm({ session, profile }: PresenceFormProps) {
       return;
     }
 
-    // Validate location
-    if (!locationId) {
+    // Use embedded location or selected location
+    const finalLocationId = locationId || profile.location_id;
+    if (!finalLocationId) {
       setSubmitError('Pilih lokasi KHDTK terlebih dahulu.');
       return;
     }
@@ -177,7 +189,7 @@ export default function PresenceForm({ session, profile }: PresenceFormProps) {
 
     const formData = new FormData();
     formData.append('session_type', session);
-    formData.append('location_id', locationId);
+    formData.append('location_id', finalLocationId);
     formData.append('routine_activity', routineActivity);
     formData.append('incident_activity', incidentActivity);
     formData.append('field_condition', fieldCondition);
@@ -286,24 +298,49 @@ export default function PresenceForm({ session, profile }: PresenceFormProps) {
           </div>
         </div>
 
-        {/* Lokasi */}
+        {/* Lokasi KHDTK (Otomatis Terhubung) */}
         <div className="form-section">
           <div className="form-section-title">📍 Lokasi KHDTK</div>
-          <div className="form-group" style={{ marginBottom: 0 }}>
-            <label className="form-label" htmlFor="field-location">Pilih Lokasi</label>
-            <select
-              id="field-location"
-              className="form-select"
-              value={locationId}
-              onChange={e => setLocationId(e.target.value)}
-              required
-            >
-              <option value="">-- Pilih Lokasi --</option>
-              {locations.map(loc => (
-                <option key={loc.id} value={loc.id}>{loc.name}</option>
-              ))}
-            </select>
-          </div>
+          {displayLocationName ? (
+            <div style={{
+              background: '#f8fafc',
+              border: '1px solid var(--color-border)',
+              borderRadius: 'var(--radius-md)',
+              padding: '14px 16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '12px'
+            }}>
+              <div>
+                <div style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a' }}>
+                  📍 {displayLocationName}
+                </div>
+                <div style={{ fontSize: '11px', color: '#166534', fontWeight: '600', marginTop: '2px' }}>
+                  🔒 Lokasi penugasan terhubung otomatis dengan akun Anda
+                </div>
+              </div>
+              <span className="badge badge-morning" style={{ fontSize: '11px', flexShrink: 0 }}>
+                Otomatis
+              </span>
+            </div>
+          ) : (
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label" htmlFor="field-location">Pilih Lokasi</label>
+              <select
+                id="field-location"
+                className="form-select"
+                value={locationId}
+                onChange={e => setLocationId(e.target.value)}
+                required
+              >
+                <option value="">-- Pilih Lokasi --</option>
+                {locations.map(loc => (
+                  <option key={loc.id} value={loc.id}>{loc.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
         {/* GPS */}

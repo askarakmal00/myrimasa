@@ -151,7 +151,7 @@ export default function LoginForm() {
         </div>
 
         <div className="footer-text" style={{ marginTop: '16px' }}>
-          © 2026 KHDTK Litbanghut. Semua hak dilindungi.
+          © 2026 MyRimasa. Semua hak dilindungi.
         </div>
       </div>
     </div>

@@ -9,6 +9,8 @@ export interface UserSession {
   email: string;
   name: string;
   role: 'employee' | 'admin';
+  location_id?: string | null;
+  location_name?: string | null;
 }
 
 /**
@@ -53,14 +55,26 @@ export async function getProfile(): Promise<Profile | null> {
 
   try {
     const adminClient = createAdminClient();
+
+    // Fetch auth user metadata for location info
+    const { data: authUserData } = await adminClient.auth.admin.getUserById(session.id);
+    const authMeta = authUserData?.user?.user_metadata || {};
+
     const { data } = await adminClient
       .from('profiles')
       .select('*')
       .eq('id', session.id)
       .single();
 
+    const location_id = data?.location_id || authMeta.location_id || session.location_id || null;
+    const location_name = data?.location_name || authMeta.location_name || session.location_name || null;
+
     if (data) {
-      return data as Profile;
+      return {
+        ...data,
+        location_id,
+        location_name,
+      } as Profile;
     }
 
     // Fallback using session data
@@ -70,6 +84,8 @@ export async function getProfile(): Promise<Profile | null> {
       name: session.name,
       role: session.role,
       status: 'active',
+      location_id,
+      location_name,
       created_at: new Date().toISOString(),
     };
   } catch {
@@ -79,6 +95,8 @@ export async function getProfile(): Promise<Profile | null> {
       name: session.name,
       role: session.role,
       status: 'active',
+      location_id: session.location_id || null,
+      location_name: session.location_name || null,
       created_at: new Date().toISOString(),
     };
   }
@@ -93,6 +111,8 @@ export async function getUser() {
     user_metadata: {
       name: profile.name,
       role: profile.role,
+      location_id: profile.location_id,
+      location_name: profile.location_name,
     },
   };
 }

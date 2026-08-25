@@ -11,6 +11,9 @@ export interface Profile {
   name: string;
   role: Role;
   status: UserStatus;
+  location_id?: string | null;
+  location_name?: string | null;
+  locations?: Location;
   created_at: string;
 }
 

@@ -91,7 +91,7 @@ export default async function HomePage() {
 
         {/* Footer */}
         <div className="footer-text">
-          © 2026 KHDTK Litbanghut. Semua hak dilindungi.
+          © 2026 MyRimasa. Semua hak dilindungi.
         </div>
       </div>
     </div>

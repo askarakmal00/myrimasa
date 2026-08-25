@@ -10,13 +10,31 @@ export async function GET() {
     if (profile.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const adminClient = createAdminClient();
+
+    // Fetch auth users to get user_metadata with location_name
+    const { data: authUsers } = await adminClient.auth.admin.listUsers();
+    const authMap = new Map();
+    (authUsers?.users || []).forEach(u => {
+      authMap.set(u.id, u.user_metadata || {});
+    });
+
     const { data, error } = await adminClient
       .from('profiles')
       .select('*')
       .order('created_at', { ascending: false });
 
     if (error) return NextResponse.json({ error: 'Gagal memuat data' }, { status: 500 });
-    return NextResponse.json(data || []);
+
+    const enrichedProfiles = (data || []).map((p: any) => {
+      const meta = authMap.get(p.id) || {};
+      return {
+        ...p,
+        location_id: p.location_id || meta.location_id || null,
+        location_name: p.location_name || meta.location_name || null,
+      };
+    });
+
+    return NextResponse.json(enrichedProfiles);
   } catch {
     return NextResponse.json({ error: 'Terjadi kesalahan' }, { status: 500 });
   }
@@ -30,7 +48,7 @@ export async function POST(request: Request) {
     if (profile.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const body = await request.json();
-    const { name, email, password, role } = body;
+    const { name, email, password, role, location_id } = body;
 
     if (!name || !email || !password) {
       return NextResponse.json({ error: 'Nama, email, dan password wajib diisi' }, { status: 400 });
@@ -43,6 +61,13 @@ export async function POST(request: Request) {
     const assignedRole = role === 'admin' ? 'admin' : 'employee';
     const adminClient = createAdminClient();
 
+    // Lookup location name if location_id is provided
+    let locationName: string | null = null;
+    if (location_id) {
+      const { data: locData } = await adminClient.from('locations').select('name').eq('id', location_id).single();
+      locationName = locData?.name || null;
+    }
+
     // 1. Create auth user with email_confirm: true (no confirmation email sent!)
     const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
       email: email.trim().toLowerCase(),
@@ -51,6 +76,8 @@ export async function POST(request: Request) {
       user_metadata: {
         name: name.trim(),
         role: assignedRole,
+        location_id: location_id || null,
+        location_name: locationName,
       },
     });
 
@@ -67,18 +94,32 @@ export async function POST(request: Request) {
     }
 
     // 2. Ensure profile record is inserted/updated
-    const { error: profileError } = await adminClient
-      .from('profiles')
-      .upsert({
+    const profileInsertData: any = {
+      id: newUserId,
+      email: email.trim().toLowerCase(),
+      name: name.trim(),
+      role: assignedRole,
+      status: 'active',
+    };
+
+    if (location_id) {
+      profileInsertData.location_id = location_id;
+    }
+    if (locationName) {
+      profileInsertData.location_name = locationName;
+    }
+
+    try {
+      await adminClient.from('profiles').upsert(profileInsertData);
+    } catch {
+      // Fallback if columns not yet synced in table
+      await adminClient.from('profiles').upsert({
         id: newUserId,
         email: email.trim().toLowerCase(),
         name: name.trim(),
         role: assignedRole,
         status: 'active',
       });
-
-    if (profileError) {
-      console.error('Error creating profile row:', profileError);
     }
 
     return NextResponse.json({ success: true, user_id: newUserId });
