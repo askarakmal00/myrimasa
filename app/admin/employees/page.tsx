@@ -142,7 +142,7 @@ export default function AdminEmployeesPage() {
                     <td className="muted" style={{ fontSize: '13px' }}>{e.email}</td>
                     <td>
                       <span className={`badge ${e.role === 'admin' ? 'badge-evening' : 'badge-morning'}`}>
-                        {e.role === 'admin' ? '🛡️ Admin' : '👤 Petugas'}
+                        {e.role === 'admin' ? '🛡️ Admin' : '👤 Staff'}
                       </span>
                     </td>
                     <td>
@@ -259,7 +259,7 @@ export default function AdminEmployeesPage() {
                   value={role}
                   onChange={e => setRole(e.target.value as 'employee' | 'admin')}
                 >
-                  <option value="employee">👤 Petugas Pengamanan (Employee)</option>
+                  <option value="employee">👤 Karyawan / Staff (Employee)</option>
                   <option value="admin">🛡️ Administrator (Admin)</option>
                 </select>
               </div>

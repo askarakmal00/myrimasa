@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { signIn } from '@/app/actions';
-import Link from 'next/link';
 
 export default function LoginForm() {
   const searchParams = useSearchParams();
@@ -13,8 +12,6 @@ export default function LoginForm() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [initLoading, setInitLoading] = useState(false);
-  const [initSuccess, setInitSuccess] = useState('');
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -41,29 +38,10 @@ export default function LoginForm() {
     }
   }
 
-  async function handleInitAdmin() {
-    setInitLoading(true);
-    setError('');
-    try {
-      const res = await fetch('/api/init-admin', { method: 'POST' });
-      const json = await res.json();
-      if (res.ok) {
-        setEmail('admin@khdtk.id');
-        setPassword('admin123');
-        setInitSuccess('Akun admin berhasil disiapkan! Silakan klik tombol "Masuk".');
-      } else {
-        setError(json.error || 'Gagal inisialisasi');
-      }
-    } catch {
-      setError('Terjadi kesalahan jaringan');
-    }
-    setInitLoading(false);
-  }
-
   function translateAuthError(msg: string): string {
     const lower = msg.toLowerCase();
     if (lower.includes('invalid login credentials') || lower.includes('invalid_grant')) {
-      return 'Email atau password salah. Pastikan akun Anda sudah didaftarkan oleh Administrator.';
+      return 'Email atau password salah. Pastikan akun Anda sudah terdaftar di sistem.';
     }
     if (lower.includes('email not confirmed')) {
       return 'Email belum dikonfirmasi di Supabase.';
@@ -106,7 +84,7 @@ export default function LoginForm() {
             KHDTK Litbanghut
           </h1>
           <p style={{ fontSize: '13px', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
-            Laporan Harian & Presensi Petugas Pengamanan
+            Laporan Harian & Presensi KHDTK
           </p>
         </div>
 
@@ -124,13 +102,6 @@ export default function LoginForm() {
               <div className="alert alert-error" style={{ marginBottom: '16px' }}>
                 <span>⚠️</span>
                 <span style={{ fontSize: '13px' }}>{error}</span>
-              </div>
-            )}
-
-            {initSuccess && (
-              <div className="alert alert-success" style={{ marginBottom: '16px' }}>
-                <span>✅</span>
-                <span style={{ fontSize: '13px' }}>{initSuccess}</span>
               </div>
             )}
 
@@ -177,23 +148,6 @@ export default function LoginForm() {
               )}
             </button>
           </form>
-
-          {/* Quick Setup for Initial Admin */}
-          <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid var(--color-border-subtle)' }}>
-            <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', textAlign: 'center', marginBottom: '8px' }}>
-              Belum ada akun Admin pertama?
-            </div>
-            <button
-              type="button"
-              id="btn-init-admin"
-              className="btn btn-secondary btn-sm btn-full"
-              style={{ fontSize: '12px' }}
-              onClick={handleInitAdmin}
-              disabled={initLoading}
-            >
-              {initLoading ? 'Memproses...' : '🛡️ Siapkan Akun Admin (admin@khdtk.id / admin123)'}
-            </button>
-          </div>
         </div>
 
         <div className="footer-text" style={{ marginTop: '16px' }}>

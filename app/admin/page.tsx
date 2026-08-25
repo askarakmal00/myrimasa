@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase';
 import Link from 'next/link';
-import { formatWibDate } from '@/lib/time';
+import { formatWibDate, PRESENCE_WINDOWS, getLocalDate } from '@/lib/time';
+import TodayAttendanceMonitoring, { EmployeeAttendanceItem } from '@/components/admin/TodayAttendanceMonitoring';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = { title: 'Dashboard Admin' };
@@ -15,31 +16,90 @@ export default async function AdminDashboardPage() {
   const wibDate = new Date(wibMs);
   const todayStr = `${wibDate.getUTCFullYear()}-${String(wibDate.getUTCMonth() + 1).padStart(2,'0')}-${String(wibDate.getUTCDate()).padStart(2,'0')}`;
 
-  // Stats for 3 sessions
+  // Fetch employees, reports, and stats in parallel
   const [
     { count: totalReports },
-    { count: todayMorning },
-    { count: todayAfternoon },
-    { count: todayEvening },
-    { count: totalEmployees },
+    { count: todayMorningCount },
+    { count: todayAfternoonCount },
+    { count: todayEveningCount },
+    { data: employeesData },
+    { data: todayReportsData },
+    { data: recentReports },
   ] = await Promise.all([
     client.from('reports').select('*', { count: 'exact', head: true }),
     client.from('reports').select('*', { count: 'exact', head: true }).eq('report_date', todayStr).eq('session_type', 'morning'),
     client.from('reports').select('*', { count: 'exact', head: true }).eq('report_date', todayStr).eq('session_type', 'afternoon'),
     client.from('reports').select('*', { count: 'exact', head: true }).eq('report_date', todayStr).eq('session_type', 'evening'),
-    client.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'employee'),
-  ]);
-
-  // Recent reports
-  const { data: recentReports } = await client
-    .from('reports')
-    .select(`
+    client.from('profiles').select('id, name, email, role, status').eq('role', 'employee').eq('status', 'active').order('name'),
+    client.from('reports').select('id, user_id, session_type, timestamp, locations(name)').eq('report_date', todayStr),
+    client.from('reports').select(`
       id, timestamp, session_type, report_date,
       profiles!reports_user_id_fkey(name, email),
       locations(name)
-    `)
-    .order('timestamp', { ascending: false })
-    .limit(10);
+    `).order('timestamp', { ascending: false }).limit(10),
+  ]);
+
+  const employees = employeesData || [];
+  const todayReports = todayReportsData || [];
+  const totalEmployees = employees.length;
+
+  // Calculate current session windows state
+  const localWib = getLocalDate(now, -420);
+  const currentMinutes = localWib.getUTCHours() * 60 + localWib.getUTCMinutes();
+
+  const morningWin = PRESENCE_WINDOWS.morning;
+  const morningStart = morningWin.startHour * 60 + morningWin.startMinute;
+  const morningEnd = morningWin.endHour * 60 + morningWin.endMinute;
+  const morningOpen = currentMinutes >= morningStart && currentMinutes <= morningEnd;
+  const morningPassed = currentMinutes > morningEnd;
+
+  const afternoonWin = PRESENCE_WINDOWS.afternoon;
+  const afternoonStart = afternoonWin.startHour * 60 + afternoonWin.startMinute;
+  const afternoonEnd = afternoonWin.endHour * 60 + afternoonWin.endMinute;
+  const afternoonOpen = currentMinutes >= afternoonStart && currentMinutes <= afternoonEnd;
+  const afternoonPassed = currentMinutes > afternoonEnd;
+
+  const eveningWin = PRESENCE_WINDOWS.evening;
+  const eveningStart = eveningWin.startHour * 60 + eveningWin.startMinute;
+  const eveningEnd = eveningWin.endHour * 60 + eveningWin.endMinute;
+  const eveningOpen = currentMinutes >= eveningStart && currentMinutes <= eveningEnd;
+  const eveningPassed = currentMinutes > eveningEnd;
+
+  // Map each employee with their attendance today
+  const attendanceList: EmployeeAttendanceItem[] = employees.map((emp) => {
+    const userMorning = todayReports.find((r) => r.user_id === emp.id && r.session_type === 'morning');
+    const userAfternoon = todayReports.find((r) => r.user_id === emp.id && r.session_type === 'afternoon');
+    const userEvening = todayReports.find((r) => r.user_id === emp.id && r.session_type === 'evening');
+
+    return {
+      id: emp.id,
+      name: emp.name,
+      email: emp.email,
+      morningReport: userMorning ? {
+        id: userMorning.id,
+        timestamp: userMorning.timestamp,
+        locationName: (userMorning.locations as any)?.name || 'KHDTK',
+      } : null,
+      afternoonReport: userAfternoon ? {
+        id: userAfternoon.id,
+        timestamp: userAfternoon.timestamp,
+        locationName: (userAfternoon.locations as any)?.name || 'KHDTK',
+      } : null,
+      eveningReport: userEvening ? {
+        id: userEvening.id,
+        timestamp: userEvening.timestamp,
+        locationName: (userEvening.locations as any)?.name || 'KHDTK',
+      } : null,
+    };
+  });
+
+  const morningDone = todayMorningCount ?? 0;
+  const afternoonDone = todayAfternoonCount ?? 0;
+  const eveningDone = todayEveningCount ?? 0;
+
+  const morningUnsubmitted = Math.max(0, totalEmployees - morningDone);
+  const afternoonUnsubmitted = Math.max(0, totalEmployees - afternoonDone);
+  const eveningUnsubmitted = Math.max(0, totalEmployees - eveningDone);
 
   const todayLabel = formatWibDate(now.toISOString());
 
@@ -53,58 +113,81 @@ export default async function AdminDashboardPage() {
     <div>
       <div className="page-header">
         <div>
-          <h1 className="page-title">Dashboard</h1>
+          <h1 className="page-title">Dashboard Admin</h1>
           <p className="page-subtitle">{todayLabel}</p>
         </div>
       </div>
 
-      {/* 5 Stats Cards Grid */}
+      {/* 5 Stats Cards Grid with 'Sudah vs Belum' Highlights */}
       <div className="stats-grid">
         <div className="stat-card">
-          <div className="stat-card-label">Presensi Pagi Hari Ini</div>
+          <div className="stat-card-label">Presensi Pagi (06.00 - 08.00)</div>
           <div className="stat-card-value" style={{ color: '#d97706' }}>
-            {todayMorning ?? 0}
+            {morningDone} <span style={{ fontSize: '16px', color: '#94a3b8', fontWeight: '500' }}>/ {totalEmployees}</span>
           </div>
-          <div className="stat-card-sub">☀️ 06.00 - 08.00</div>
+          <div className="stat-card-sub">
+            <span style={{ color: morningUnsubmitted > 0 ? '#dc2626' : '#166534', fontWeight: '600' }}>
+              {morningUnsubmitted > 0 ? `⚠️ ${morningUnsubmitted} belum presensi` : '✅ Semua hadir'}
+            </span>
+          </div>
         </div>
 
         <div className="stat-card">
-          <div className="stat-card-label">Presensi Siang Hari Ini</div>
+          <div className="stat-card-label">Presensi Siang (13.00 - 14.00)</div>
           <div className="stat-card-value" style={{ color: '#b45309' }}>
-            {todayAfternoon ?? 0}
+            {afternoonDone} <span style={{ fontSize: '16px', color: '#94a3b8', fontWeight: '500' }}>/ {totalEmployees}</span>
           </div>
-          <div className="stat-card-sub">🌤️ 13.00 - 14.00</div>
+          <div className="stat-card-sub">
+            <span style={{ color: afternoonUnsubmitted > 0 ? '#dc2626' : '#166534', fontWeight: '600' }}>
+              {afternoonUnsubmitted > 0 ? `⚠️ ${afternoonUnsubmitted} belum presensi` : '✅ Semua hadir'}
+            </span>
+          </div>
         </div>
 
         <div className="stat-card">
-          <div className="stat-card-label">Presensi Sore Hari Ini</div>
+          <div className="stat-card-label">Presensi Sore (16.00 - 23.59)</div>
           <div className="stat-card-value" style={{ color: '#4338ca' }}>
-            {todayEvening ?? 0}
+            {eveningDone} <span style={{ fontSize: '16px', color: '#94a3b8', fontWeight: '500' }}>/ {totalEmployees}</span>
           </div>
-          <div className="stat-card-sub">🌙 16.00 - 23.59</div>
+          <div className="stat-card-sub">
+            <span style={{ color: eveningUnsubmitted > 0 ? '#dc2626' : '#166534', fontWeight: '600' }}>
+              {eveningUnsubmitted > 0 ? `⚠️ ${eveningUnsubmitted} belum presensi` : '✅ Semua hadir'}
+            </span>
+          </div>
         </div>
 
         <div className="stat-card">
-          <div className="stat-card-label">Total Laporan</div>
+          <div className="stat-card-label">Total Laporan Masuk</div>
           <div className="stat-card-value" style={{ color: '#1e5631' }}>
             {totalReports ?? 0}
           </div>
-          <div className="stat-card-sub">📋 Semua waktu</div>
+          <div className="stat-card-sub">📋 Semua sesi & waktu</div>
         </div>
 
         <div className="stat-card">
-          <div className="stat-card-label">Total Karyawan</div>
+          <div className="stat-card-label">Total Karyawan Aktif</div>
           <div className="stat-card-value" style={{ color: '#0f172a' }}>
-            {totalEmployees ?? 0}
+            {totalEmployees}
           </div>
-          <div className="stat-card-sub">👤 Terdaftar</div>
+          <div className="stat-card-sub">👤 Terdaftar di sistem</div>
         </div>
       </div>
 
+      {/* Today Attendance Matrix Monitoring (Track Who Has / Has Not Submitted) */}
+      <TodayAttendanceMonitoring
+        employees={attendanceList}
+        morningOpen={morningOpen}
+        afternoonOpen={afternoonOpen}
+        eveningOpen={eveningOpen}
+        morningPassed={morningPassed}
+        afternoonPassed={afternoonPassed}
+        eveningPassed={eveningPassed}
+      />
+
       {/* Recent reports section */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', marginTop: '16px' }}>
-        <h2 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a' }}>Laporan Terbaru</h2>
-        <Link href="/admin/reports" className="btn btn-secondary btn-sm">Lihat Semua →</Link>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', marginTop: '32px' }}>
+        <h2 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a' }}>Laporan Masuk Terbaru</h2>
+        <Link href="/admin/reports" className="btn btn-secondary btn-sm">Lihat Semua Laporan →</Link>
       </div>
 
       <div className="table-wrapper">
@@ -142,7 +225,7 @@ export default async function AdminDashboardPage() {
                       id={`btn-view-report-${r.id}`}
                       className="btn btn-ghost btn-sm"
                     >
-                      →
+                      Detail →
                     </Link>
                   </td>
                 </tr>

@@ -72,17 +72,7 @@ export async function signIn(formData: FormData) {
     redirect('/admin');
   }
 
-  // - Employee goes directly to the active presence form (if an active session window is currently open)
-  const now = new Date();
-  if (isWithinWindow('morning', now)) {
-    redirect('/presensi/morning');
-  } else if (isWithinWindow('afternoon', now)) {
-    redirect('/presensi/afternoon');
-  } else if (isWithinWindow('evening', now)) {
-    redirect('/presensi/evening');
-  }
-
-  // Otherwise go to home status hub
+  // - Staff / Employee goes to home status hub (3 sessions overview: Pagi, Siang, Sore)
   redirect('/');
 }
 

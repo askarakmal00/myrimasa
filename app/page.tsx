@@ -4,6 +4,7 @@ import { getPresenceStatus, PRESENCE_WINDOWS } from '@/lib/time';
 import { getMyReportToday } from './actions';
 import PresenceCard from '@/components/PresenceCard';
 import Header from '@/components/Header';
+import StaffTodaySummary from '@/components/StaffTodaySummary';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -25,7 +26,7 @@ export default async function HomePage() {
     redirect('/admin');
   }
 
-  // 3. For Employee: fetch today's status for all 3 sessions
+  // 3. For Employee/Staff: fetch today's status for all 3 sessions
   const serverNow = new Date();
   const [morningReport, afternoonReport, eveningReport] = await Promise.all([
     getMyReportToday('morning'),
@@ -43,7 +44,19 @@ export default async function HomePage() {
         {/* Top Header Card */}
         <Header profile={profile} />
 
-        {/* 3 Presence Cards: Pagi, Siang, Sore */}
+        {/* Staff Today Attendance Status Summary (Matrix Overview) */}
+        <StaffTodaySummary
+          name={profile.name}
+          email={profile.email}
+          morningReport={morningReport ? { id: morningReport.id, timestamp: morningReport.timestamp } : null}
+          afternoonReport={afternoonReport ? { id: afternoonReport.id, timestamp: afternoonReport.timestamp } : null}
+          eveningReport={eveningReport ? { id: eveningReport.id, timestamp: eveningReport.timestamp } : null}
+          morningStatus={morningStatus}
+          afternoonStatus={afternoonStatus}
+          eveningStatus={eveningStatus}
+        />
+
+        {/* 3 Presence Action Cards: Pagi, Siang, Sore */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
           <PresenceCard
             session="morning"
@@ -71,7 +84,7 @@ export default async function HomePage() {
         </div>
 
         {/* Bottom Notice Card */}
-        <div className="notice-card fade-in">
+        <div className="notice-card fade-in" style={{ marginTop: '16px' }}>
           <span className="notice-icon">ⓘ</span>
           <span>Pastikan Anda melakukan presensi sesuai jadwal yang telah ditentukan.</span>
         </div>

@@ -29,7 +29,7 @@ export default function Header({ profile }: HeaderProps) {
         </div>
         <div>
           <div className="app-brand-title">KHDTK Litbanghut</div>
-          <div className="app-brand-subtitle">Laporan Harian & Presensi Petugas Pengamanan KHDTK</div>
+          <div className="app-brand-subtitle">Laporan Harian & Presensi KHDTK</div>
         </div>
       </Link>
 
@@ -42,7 +42,7 @@ export default function Header({ profile }: HeaderProps) {
             <div>
               <div className="app-user-name">{profile.name}</div>
               <div className="app-user-role">
-                {profile.role === 'admin' ? 'Administrator' : 'Petugas Pengamanan'}
+                {profile.role === 'admin' ? 'Administrator' : 'Staff / Employee'}
               </div>
             </div>
           </div>
