@@ -16,7 +16,6 @@ const navItems = [
   { href: '/admin/employees', label: 'Karyawan', icon: '👥', exact: false },
   { href: '/admin/accounts', label: 'Lembar Akun', icon: '🎫', exact: false },
   { href: '/admin/locations', label: 'Lokasi', icon: '📍', exact: false },
-  { href: '/panduan', label: 'Buku Panduan', icon: '📖', exact: false },
 ];
 
 export default function AdminSidebar({ profile }: AdminSidebarProps) {

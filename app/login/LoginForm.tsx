@@ -286,28 +286,6 @@ export default function LoginForm() {
                 )}
               </button>
             </form>
-
-            <div style={{ marginTop: '18px', textAlign: 'center' }}>
-              <Link
-                href="/panduan"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  fontSize: '12px',
-                  color: '#166534',
-                  fontWeight: '700',
-                  textDecoration: 'none',
-                  padding: '7px 14px',
-                  borderRadius: '10px',
-                  background: '#f0fdf4',
-                  border: '1px solid #bbf7d0',
-                  transition: 'all 0.15s',
-                }}
-              >
-                📖 Panduan Presensi & Tata Cara Login
-              </Link>
-            </div>
           </div>
 
           <p style={{

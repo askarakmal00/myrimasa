@@ -7,25 +7,30 @@ export default function AdminEmployeesPage() {
   const [employees, setEmployees] = useState<Profile[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Add Modal State
   const [showAddModal, setShowAddModal] = useState(false);
+  const [addName, setAddName] = useState('');
+  const [addEmail, setAddEmail] = useState('');
+  const [addPassword, setAddPassword] = useState('');
+  const [addRole, setAddRole] = useState<'employee' | 'admin'>('employee');
+  const [addLocationId, setAddLocationId] = useState('');
+  const [adding, setAdding] = useState(false);
+  const [addError, setAddError] = useState('');
+  const [addSuccess, setAddSuccess] = useState('');
 
-  // Add Employee Form State
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'employee' | 'admin'>('employee');
-  const [locationId, setLocationId] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [formError, setFormError] = useState('');
-  const [formSuccess, setFormSuccess] = useState('');
-
-  // Password Reset Modal State
-  const [resetTargetUser, setResetTargetUser] = useState<Profile | null>(null);
-  const [newStaffPassword, setNewStaffPassword] = useState('');
-  const [showNewStaffPassword, setShowNewStaffPassword] = useState(false);
-  const [resettingPassword, setResettingPassword] = useState(false);
-  const [resetError, setResetError] = useState('');
-  const [resetSuccess, setResetSuccess] = useState(false);
+  // Edit Modal State
+  const [editEmployee, setEditEmployee] = useState<Profile | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [editRole, setEditRole] = useState<'employee' | 'admin'>('employee');
+  const [editLocationId, setEditLocationId] = useState('');
+  const [editPassword, setEditPassword] = useState('');
+  const [showEditPassword, setShowEditPassword] = useState(false);
+  const [enablePasswordChange, setEnablePasswordChange] = useState(false);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [editError, setEditError] = useState('');
+  const [editSuccess, setEditSuccess] = useState(false);
   const [copiedWa, setCopiedWa] = useState(false);
 
   async function fetchEmployees() {
@@ -47,87 +52,60 @@ export default function AdminEmployeesPage() {
 
   async function handleAddEmployee(e: React.FormEvent) {
     e.preventDefault();
-    setSubmitting(true);
-    setFormError('');
-    setFormSuccess('');
+    setAdding(true);
+    setAddError('');
+    setAddSuccess('');
 
     try {
       const res = await fetch('/api/admin/employees', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name,
-          email,
-          password,
-          role,
-          location_id: role === 'employee' ? locationId : null,
+          name: addName,
+          email: addEmail,
+          password: addPassword,
+          role: addRole,
+          location_id: addRole === 'employee' ? addLocationId : null,
         }),
       });
 
       const json = await res.json();
 
       if (!res.ok) {
-        setFormError(json.error || 'Gagal menambahkan karyawan');
-        setSubmitting(false);
+        setAddError(json.error || 'Gagal menambahkan karyawan');
+        setAdding(false);
         return;
       }
 
-      setFormSuccess(`Akun untuk ${name} berhasil dibuat!`);
-      setName('');
-      setEmail('');
-      setPassword('');
-      setRole('employee');
-      setLocationId('');
+      setAddSuccess(`Akun untuk ${addName} berhasil dibuat!`);
+      setAddName('');
+      setAddEmail('');
+      setAddPassword('');
+      setAddRole('employee');
+      setAddLocationId('');
       fetchEmployees();
       setTimeout(() => {
         setShowAddModal(false);
-        setFormSuccess('');
+        setAddSuccess('');
       }, 1500);
     } catch {
-      setFormError('Terjadi kesalahan jaringan');
+      setAddError('Terjadi kesalahan jaringan');
     }
-    setSubmitting(false);
+    setAdding(false);
   }
 
-  function handleOpenPasswordReset(emp: Profile) {
-    setResetTargetUser(emp);
-    // Generate a default memorable password
-    const randomDigits = Math.floor(1000 + Math.random() * 9000);
-    setNewStaffPassword(`Rimasa#${randomDigits}`);
-    setResetError('');
-    setResetSuccess(false);
+  function handleOpenEdit(emp: Profile) {
+    setEditEmployee(emp);
+    setEditName(emp.name);
+    setEditEmail(emp.email);
+    setEditRole(emp.role);
+    setEditLocationId(emp.location_id || '');
+    setEditPassword('');
+    setEnablePasswordChange(false);
+    setShowEditPassword(false);
+    setEditError('');
+    setEditSuccess(false);
     setCopiedWa(false);
-  }
-
-  async function handleResetPasswordSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!resetTargetUser) return;
-    if (newStaffPassword.length < 6) {
-      setResetError('Password minimal 6 karakter');
-      return;
-    }
-
-    setResettingPassword(true);
-    setResetError('');
-    try {
-      const res = await fetch(`/api/admin/employees/${resetTargetUser.id}/password`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ newPassword: newStaffPassword }),
-      });
-
-      const json = await res.json();
-      if (!res.ok) {
-        setResetError(json.error || 'Gagal mengubah password');
-        setResettingPassword(false);
-        return;
-      }
-
-      setResetSuccess(true);
-    } catch {
-      setResetError('Terjadi kesalahan jaringan');
-    }
-    setResettingPassword(false);
   }
 
   function generateRandomPassword() {
@@ -136,27 +114,74 @@ export default function AdminEmployeesPage() {
     for (let i = 0; i < 4; i++) {
       code += chars.charAt(Math.floor(Math.random() * chars.length));
     }
-    setNewStaffPassword(`Rimasa@${code}`);
+    setEditPassword(`Rimasa@${code}`);
+    setEnablePasswordChange(true);
   }
 
-  function getWhatsAppMessage(emp: Profile, pass: string): string {
+  async function handleSaveEdit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editEmployee) return;
+
+    if (enablePasswordChange && editPassword.trim().length > 0 && editPassword.trim().length < 6) {
+      setEditError('Password baru minimal 6 karakter');
+      return;
+    }
+
+    setSavingEdit(true);
+    setEditError('');
+
+    try {
+      const res = await fetch(`/api/admin/employees/${editEmployee.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: editName,
+          email: editEmail,
+          role: editRole,
+          location_id: editRole === 'employee' ? editLocationId : null,
+          newPassword: enablePasswordChange && editPassword.trim().length >= 6 ? editPassword.trim() : undefined,
+        }),
+      });
+
+      const json = await res.json();
+      if (!res.ok) {
+        setEditError(json.error || 'Gagal memperbarui data karyawan');
+        setSavingEdit(false);
+        return;
+      }
+
+      fetchEmployees();
+
+      if (enablePasswordChange && editPassword.trim().length >= 6) {
+        setEditSuccess(true);
+      } else {
+        setEditEmployee(null);
+      }
+    } catch {
+      setEditError('Terjadi kesalahan jaringan');
+    }
+    setSavingEdit(false);
+  }
+
+  function getWhatsAppMessage(empName: string, empEmail: string, pass: string, locId: string): string {
+    const loc = locations.find(l => l.id === locId)?.name || 'KHDTK Penugasan';
     return (
       `*INFORMASI AKUN & PASSWORD PRESENSI MYRIMASA*\n` +
       `----------------------------------------\n` +
-      `Halo *${emp.name}*,\n` +
-      `Berikut kredensial login akun presensi Anda di sistem Myrimasa:\n\n` +
+      `Halo *${empName}*,\n` +
+      `Berikut pembaruan kredensial akun presensi Anda di sistem Myrimasa:\n\n` +
       `🌐 *Website Presensi:* https://rimasa.my.id\n` +
-      `📧 *Email (Login):* ${emp.email}\n` +
-      `📍 *Lokasi KHDTK:* ${emp.location_name || 'KHDTK Penugasan'}\n` +
+      `📧 *Email (Login):* ${empEmail}\n` +
+      `📍 *Lokasi KHDTK:* ${loc}\n` +
       `🔑 *Password Baru:* ${pass}\n` +
       `----------------------------------------\n` +
-      `Silakan buka https://rimasa.my.id melalui browser HP dan login. Anda dapat mengganti password mandiri kapan saja di menu profil/header.`
+      `Silakan buka https://rimasa.my.id melalui browser HP Anda dan lakukan login.`
     );
   }
 
   function copyWaMessage() {
-    if (!resetTargetUser) return;
-    const msg = getWhatsAppMessage(resetTargetUser, newStaffPassword);
+    if (!editEmployee) return;
+    const msg = getWhatsAppMessage(editName, editEmail, editPassword, editLocationId);
     navigator.clipboard.writeText(msg);
     setCopiedWa(true);
     setTimeout(() => setCopiedWa(false), 2500);
@@ -183,12 +208,12 @@ export default function AdminEmployeesPage() {
       <div className="page-header">
         <div>
           <h1 className="page-title">Manajemen Karyawan & Staff</h1>
-          <p className="page-subtitle">{employees.length} akun terdaftar di sistem rimasa.my.id</p>
+          <p className="page-subtitle">{employees.length} akun terdaftar di sistem</p>
         </div>
         <button
           id="btn-add-employee"
           className="btn btn-primary"
-          onClick={() => { setShowAddModal(true); setFormError(''); setFormSuccess(''); }}
+          onClick={() => { setShowAddModal(true); setAddError(''); setAddSuccess(''); }}
         >
           ➕ Tambah Karyawan Baru
         </button>
@@ -221,9 +246,7 @@ export default function AdminEmployeesPage() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <div style={{
                           width: '34px', height: '34px', borderRadius: '50%', flexShrink: 0,
-                          background: e.role === 'admin'
-                            ? '#3730a3'
-                            : '#1e5631',
+                          background: e.role === 'admin' ? '#3730a3' : '#1e5631',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                           fontSize: '13px', fontWeight: '700', color: 'white',
                         }}>
@@ -268,21 +291,22 @@ export default function AdminEmployeesPage() {
                     </td>
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px' }}>
+                        {/* Edit Button — includes password change & reset */}
                         <button
                           className="btn btn-ghost btn-sm"
                           style={{
                             color: '#1e40af',
                             background: '#eff6ff',
                             border: '1px solid #bfdbfe',
-                            padding: '5px 9px',
+                            padding: '5px 10px',
                             fontSize: '12px',
                             fontWeight: '700',
                             borderRadius: '8px',
                           }}
-                          onClick={() => handleOpenPasswordReset(e)}
-                          title="Reset atau Ganti Password Staff"
+                          onClick={() => handleOpenEdit(e)}
+                          title="Edit data karyawan & ganti/reset password"
                         >
-                          🔑 Ganti Password
+                          ✏️ Edit
                         </button>
                         <button
                           className="btn btn-ghost btn-sm"
@@ -327,82 +351,77 @@ export default function AdminEmployeesPage() {
               Akun akan langsung aktif dan terhubung ke domain <strong>rimasa.my.id</strong>.
             </p>
 
-            {formError && (
+            {addError && (
               <div className="alert alert-error mb-16">
                 <span>⚠️</span>
-                <span style={{ fontSize: '13px' }}>{formError}</span>
+                <span style={{ fontSize: '13px' }}>{addError}</span>
               </div>
             )}
 
-            {formSuccess && (
+            {addSuccess && (
               <div className="alert alert-success mb-16">
                 <span>✅</span>
-                <span style={{ fontSize: '13px' }}>{formSuccess}</span>
+                <span style={{ fontSize: '13px' }}>{addSuccess}</span>
               </div>
             )}
 
             <form onSubmit={handleAddEmployee}>
               <div className="form-group">
-                <label className="form-label" htmlFor="modal-emp-name">Nama Lengkap</label>
+                <label className="form-label">Nama Lengkap</label>
                 <input
-                  id="modal-emp-name"
                   type="text"
                   className="form-input"
                   placeholder="Contoh: Zulpan"
-                  value={name}
-                  onChange={e => setName(e.target.value)}
+                  value={addName}
+                  onChange={e => setAddName(e.target.value)}
                   required
                 />
               </div>
 
               <div className="form-group">
-                <label className="form-label" htmlFor="modal-emp-email">Email (Username Login)</label>
+                <label className="form-label">Email (Username Login)</label>
                 <input
-                  id="modal-emp-email"
                   type="email"
                   className="form-input"
                   placeholder="petugas@gmail.com"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
+                  value={addEmail}
+                  onChange={e => setAddEmail(e.target.value)}
                   required
                 />
               </div>
 
               <div className="form-group">
-                <label className="form-label" htmlFor="modal-emp-password">Password Awal</label>
+                <label className="form-label">Password Awal</label>
                 <input
-                  id="modal-emp-password"
                   type="text"
                   className="form-input"
-                  placeholder="Minimal 6 karakter (contoh: Rimasa#2026)"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
+                  placeholder="Minimal 6 karakter (contoh: khdtk2026)"
+                  value={addPassword}
+                  onChange={e => setAddPassword(e.target.value)}
                   required
                   minLength={6}
                 />
               </div>
 
               <div className="form-group">
-                <label className="form-label" htmlFor="modal-emp-role">Role Pengguna</label>
+                <label className="form-label">Role Pengguna</label>
                 <select
-                  id="modal-emp-role"
                   className="form-select"
-                  value={role}
-                  onChange={e => setRole(e.target.value as 'employee' | 'admin')}
+                  value={addRole}
+                  onChange={e => setAddRole(e.target.value as 'employee' | 'admin')}
                 >
                   <option value="employee">👤 Karyawan / Staff Lapangan</option>
                   <option value="admin">🛡️ Administrator</option>
                 </select>
               </div>
 
-              {role === 'employee' && (
+              {addRole === 'employee' && (
                 <div className="form-group">
-                  <label className="form-label" htmlFor="modal-emp-location">Lokasi KHDTK Penugasan</label>
+                  <label className="form-label">Lokasi KHDTK Penugasan</label>
                   <select
-                    id="modal-emp-location"
                     className="form-select"
-                    value={locationId}
-                    onChange={e => setLocationId(e.target.value)}
+                    value={addLocationId}
+                    onChange={e => setAddLocationId(e.target.value)}
                     required
                   >
                     <option value="">-- Pilih Lokasi KHDTK --</option>
@@ -410,9 +429,6 @@ export default function AdminEmployeesPage() {
                       <option key={loc.id} value={loc.id}>📍 {loc.name}</option>
                     ))}
                   </select>
-                  <div className="form-hint" style={{ marginTop: '4px', fontSize: '11px' }}>
-                    Staf tidak perlu memilih lokasi lagi saat presensi.
-                  </div>
                 </div>
               )}
 
@@ -425,12 +441,11 @@ export default function AdminEmployeesPage() {
                   Batal
                 </button>
                 <button
-                  id="btn-modal-submit-employee"
                   type="submit"
                   className="btn btn-primary btn-full"
-                  disabled={submitting}
+                  disabled={adding}
                 >
-                  {submitting ? <><span className="spinner" /> Menyimpan...</> : 'Simpan Akun'}
+                  {adding ? <><span className="spinner" /> Menyimpan...</> : 'Simpan Akun'}
                 </button>
               </div>
             </form>
@@ -438,8 +453,8 @@ export default function AdminEmployeesPage() {
         </div>
       )}
 
-      {/* Modal Reset / Ganti Password Staff oleh Admin */}
-      {resetTargetUser && (
+      {/* Modal Edit Karyawan & Reset/Kirim Password */}
+      {editEmployee && (
         <div className="modal-overlay centered" style={{ zIndex: 9999 }}>
           <div className="modal centered-modal" style={{ maxWidth: '480px', width: '92%' }}>
             <div className="flex justify-between items-center mb-16">
@@ -449,39 +464,39 @@ export default function AdminEmployeesPage() {
                   background: '#dbeafe', color: '#1e40af',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px',
                 }}>
-                  🔑
+                  ✏️
                 </div>
                 <div>
-                  <h2 className="modal-title" style={{ fontSize: '17px' }}>Ganti Password Staff</h2>
+                  <h2 className="modal-title" style={{ fontSize: '17px' }}>Edit Data Karyawan</h2>
                   <p className="modal-subtitle" style={{ fontSize: '12px' }}>
-                    {resetTargetUser.name} · {resetTargetUser.email}
+                    {editEmployee.name} ({editEmployee.email})
                   </p>
                 </div>
               </div>
               <button
                 type="button"
                 className="btn btn-ghost btn-sm"
-                onClick={() => setResetTargetUser(null)}
+                onClick={() => setEditEmployee(null)}
               >
                 ✕
               </button>
             </div>
 
-            {resetError && (
+            {editError && (
               <div className="alert alert-error mb-16" style={{ fontSize: '13px' }}>
                 <span>⚠️</span>
-                <span>{resetError}</span>
+                <span>{editError}</span>
               </div>
             )}
 
-            {resetSuccess ? (
+            {editSuccess ? (
               <div>
                 <div className="alert alert-success mb-16" style={{ fontSize: '13px' }}>
                   <span>✅</span>
                   <div>
-                    <strong>Password berhasil diubah!</strong>
+                    <strong>Data dan Password berhasil diperbarui!</strong>
                     <div style={{ marginTop: '2px', fontSize: '12px' }}>
-                      Password baru untuk <strong>{resetTargetUser.name}</strong> adalah:
+                      Password baru untuk <strong>{editName}</strong>:
                     </div>
                     <div style={{
                       margin: '8px 0',
@@ -493,16 +508,11 @@ export default function AdminEmployeesPage() {
                       fontSize: '15px',
                       fontWeight: '800',
                       color: '#166534',
-                      letterSpacing: '0.5px',
                     }}>
-                      {newStaffPassword}
+                      {editPassword}
                     </div>
                   </div>
                 </div>
-
-                <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '12px' }}>
-                  Bagikan informasi akun dan password baru ini langsung ke staf melalui WhatsApp:
-                </p>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <button
@@ -511,23 +521,18 @@ export default function AdminEmployeesPage() {
                     onClick={copyWaMessage}
                     style={{
                       width: '100%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '8px',
                       padding: '12px',
                       borderRadius: '10px',
                       background: copiedWa ? '#16a34a' : '#1e5631',
                     }}
                   >
-                    <span>{copiedWa ? '✅' : '📋'}</span>
-                    <span>{copiedWa ? 'Format Pesan WA Berhasil Disalin!' : 'Salin Pesan Format WhatsApp'}</span>
+                    <span>{copiedWa ? '✅ Pesan WA Disalin!' : '📋 Salin Pesan Format WhatsApp'}</span>
                   </button>
 
                   <button
                     type="button"
                     className="btn btn-secondary"
-                    onClick={() => setResetTargetUser(null)}
+                    onClick={() => setEditEmployee(null)}
                     style={{ width: '100%', padding: '10px', borderRadius: '10px' }}
                   >
                     Selesai & Tutup
@@ -535,67 +540,141 @@ export default function AdminEmployeesPage() {
                 </div>
               </div>
             ) : (
-              <form onSubmit={handleResetPasswordSubmit}>
-                <div style={{
-                  padding: '10px 14px',
-                  background: '#f8fafc',
-                  borderRadius: '10px',
-                  border: '1px solid #e2e8f0',
-                  marginBottom: '16px',
-                  fontSize: '12px',
-                  color: '#475569',
-                }}>
-                  📍 <strong>Lokasi Penugasan:</strong> {resetTargetUser.location_name || 'KHDTK'}<br />
-                  🌐 <strong>Domain Login:</strong> https://rimasa.my.id
-                </div>
-
-                <div className="form-group" style={{ marginBottom: '14px' }}>
+              <form onSubmit={handleSaveEdit}>
+                <div className="form-group" style={{ marginBottom: '12px' }}>
                   <label className="form-label" style={{ fontSize: '12px', fontWeight: '700' }}>
-                    Password Baru Staff
+                    Nama Lengkap
                   </label>
-                  <div style={{ position: 'relative' }}>
-                    <input
-                      type={showNewStaffPassword ? 'text' : 'password'}
-                      className="form-input"
-                      style={{ paddingRight: '42px', fontSize: '14px', fontFamily: 'monospace' }}
-                      value={newStaffPassword}
-                      onChange={e => setNewStaffPassword(e.target.value)}
-                      required
-                      minLength={6}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowNewStaffPassword(!showNewStaffPassword)}
-                      style={{
-                        position: 'absolute', right: '10px', top: '50%',
-                        transform: 'translateY(-50%)', background: 'none', border: 'none',
-                        cursor: 'pointer', fontSize: '14px',
-                      }}
-                      tabIndex={-1}
-                    >
-                      {showNewStaffPassword ? '🙈' : '👁️'}
-                    </button>
-                  </div>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={editName}
+                    onChange={e => setEditName(e.target.value)}
+                    required
+                  />
                 </div>
 
-                {/* Quick Generator Buttons */}
-                <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
-                  <button
-                    type="button"
-                    className="btn btn-ghost btn-sm"
-                    style={{ fontSize: '11px', background: '#f1f5f9', border: '1px solid #cbd5e1' }}
-                    onClick={generateRandomPassword}
+                <div className="form-group" style={{ marginBottom: '12px' }}>
+                  <label className="form-label" style={{ fontSize: '12px', fontWeight: '700' }}>
+                    Email (Login)
+                  </label>
+                  <input
+                    type="email"
+                    className="form-input"
+                    value={editEmail}
+                    onChange={e => setEditEmail(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="form-group" style={{ marginBottom: '12px' }}>
+                  <label className="form-label" style={{ fontSize: '12px', fontWeight: '700' }}>
+                    Role
+                  </label>
+                  <select
+                    className="form-select"
+                    value={editRole}
+                    onChange={e => setEditRole(e.target.value as 'employee' | 'admin')}
                   >
-                    🎲 Buat Password Acak
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-ghost btn-sm"
-                    style={{ fontSize: '11px', background: '#f1f5f9', border: '1px solid #cbd5e1' }}
-                    onClick={() => setNewStaffPassword('khdtk2026')}
-                  >
-                    🔑 Gunakan "khdtk2026"
-                  </button>
+                    <option value="employee">👤 Karyawan / Staff Lapangan</option>
+                    <option value="admin">🛡️ Administrator</option>
+                  </select>
+                </div>
+
+                {editRole === 'employee' && (
+                  <div className="form-group" style={{ marginBottom: '14px' }}>
+                    <label className="form-label" style={{ fontSize: '12px', fontWeight: '700' }}>
+                      Lokasi KHDTK Penugasan
+                    </label>
+                    <select
+                      className="form-select"
+                      value={editLocationId}
+                      onChange={e => setEditLocationId(e.target.value)}
+                      required
+                    >
+                      <option value="">-- Pilih Lokasi KHDTK --</option>
+                      {locations.map(loc => (
+                        <option key={loc.id} value={loc.id}>📍 {loc.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Reset / Ganti Password Section */}
+                <div style={{
+                  background: '#f8fafc',
+                  border: '1.5px dashed #cbd5e1',
+                  borderRadius: '12px',
+                  padding: '14px',
+                  marginBottom: '18px',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: enablePasswordChange ? '10px' : '0' }}>
+                    <label style={{
+                      display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer',
+                      fontSize: '13px', fontWeight: '700', color: '#1e293b',
+                    }}>
+                      <input
+                        type="checkbox"
+                        checked={enablePasswordChange}
+                        onChange={e => {
+                          setEnablePasswordChange(e.target.checked);
+                          if (e.target.checked && !editPassword) {
+                            const rand = Math.floor(1000 + Math.random() * 9000);
+                            setEditPassword(`Rimasa#${rand}`);
+                          }
+                        }}
+                      />
+                      <span>🔑 Reset / Ganti Password Staff</span>
+                    </label>
+                  </div>
+
+                  {enablePasswordChange && (
+                    <div>
+                      <div style={{ position: 'relative', marginBottom: '8px' }}>
+                        <input
+                          type={showEditPassword ? 'text' : 'password'}
+                          className="form-input"
+                          style={{ paddingRight: '42px', fontSize: '13px', fontFamily: 'monospace' }}
+                          placeholder="Masukkan password baru (min. 6 karakter)"
+                          value={editPassword}
+                          onChange={e => setEditPassword(e.target.value)}
+                          required={enablePasswordChange}
+                          minLength={6}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowEditPassword(!showEditPassword)}
+                          style={{
+                            position: 'absolute', right: '10px', top: '50%',
+                            transform: 'translateY(-50%)', background: 'none', border: 'none',
+                            cursor: 'pointer', fontSize: '14px',
+                          }}
+                          tabIndex={-1}
+                        >
+                          {showEditPassword ? '🙈' : '👁️'}
+                        </button>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-sm"
+                          style={{ fontSize: '11px', background: '#f1f5f9', border: '1px solid #cbd5e1' }}
+                          onClick={generateRandomPassword}
+                        >
+                          🎲 Buat Acak
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-sm"
+                          style={{ fontSize: '11px', background: '#f1f5f9', border: '1px solid #cbd5e1' }}
+                          onClick={() => setEditPassword('khdtk2026')}
+                        >
+                          🔑 Default "khdtk2026"
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div style={{ display: 'flex', gap: '10px' }}>
@@ -603,8 +682,8 @@ export default function AdminEmployeesPage() {
                     type="button"
                     className="btn btn-ghost"
                     style={{ flex: 1, padding: '10px', borderRadius: '10px' }}
-                    onClick={() => setResetTargetUser(null)}
-                    disabled={resettingPassword}
+                    onClick={() => setEditEmployee(null)}
+                    disabled={savingEdit}
                   >
                     Batal
                   </button>
@@ -612,16 +691,9 @@ export default function AdminEmployeesPage() {
                     type="submit"
                     className="btn btn-primary"
                     style={{ flex: 2, padding: '10px', borderRadius: '10px' }}
-                    disabled={resettingPassword}
+                    disabled={savingEdit}
                   >
-                    {resettingPassword ? (
-                      <>
-                        <span className="spinner" style={{ width: '14px', height: '14px' }} />
-                        <span>Menyimpan...</span>
-                      </>
-                    ) : (
-                      'Simpan Password Baru'
-                    )}
+                    {savingEdit ? 'Menyimpan...' : 'Simpan Perubahan'}
                   </button>
                 </div>
               </form>

@@ -34,17 +34,6 @@ export default function Header({ profile }: HeaderProps) {
         {/* Right side: Actions & User & Sign out */}
         {profile ? (
           <div className="main-header-right">
-            {/* Guide Quick Link */}
-            <Link
-              href="/panduan"
-              className="main-header-action-btn"
-              title="Panduan Penggunaan"
-              aria-label="Buka panduan penggunaan"
-            >
-              <span style={{ fontSize: '15px' }}>📖</span>
-              <span className="header-text-label">Panduan</span>
-            </Link>
-
             {/* Change Password Quick Button */}
             <button
               type="button"
