@@ -7,9 +7,9 @@ export default function AdminEmployeesPage() {
   const [employees, setEmployees] = useState<Profile[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
 
-  // Form State
+  // Add Employee Form State
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -18,6 +18,15 @@ export default function AdminEmployeesPage() {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
   const [formSuccess, setFormSuccess] = useState('');
+
+  // Password Reset Modal State
+  const [resetTargetUser, setResetTargetUser] = useState<Profile | null>(null);
+  const [newStaffPassword, setNewStaffPassword] = useState('');
+  const [showNewStaffPassword, setShowNewStaffPassword] = useState(false);
+  const [resettingPassword, setResettingPassword] = useState(false);
+  const [resetError, setResetError] = useState('');
+  const [resetSuccess, setResetSuccess] = useState(false);
+  const [copiedWa, setCopiedWa] = useState(false);
 
   async function fetchEmployees() {
     setLoading(true);
@@ -71,13 +80,86 @@ export default function AdminEmployeesPage() {
       setLocationId('');
       fetchEmployees();
       setTimeout(() => {
-        setShowModal(false);
+        setShowAddModal(false);
         setFormSuccess('');
       }, 1500);
     } catch {
       setFormError('Terjadi kesalahan jaringan');
     }
     setSubmitting(false);
+  }
+
+  function handleOpenPasswordReset(emp: Profile) {
+    setResetTargetUser(emp);
+    // Generate a default memorable password
+    const randomDigits = Math.floor(1000 + Math.random() * 9000);
+    setNewStaffPassword(`Rimasa#${randomDigits}`);
+    setResetError('');
+    setResetSuccess(false);
+    setCopiedWa(false);
+  }
+
+  async function handleResetPasswordSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!resetTargetUser) return;
+    if (newStaffPassword.length < 6) {
+      setResetError('Password minimal 6 karakter');
+      return;
+    }
+
+    setResettingPassword(true);
+    setResetError('');
+    try {
+      const res = await fetch(`/api/admin/employees/${resetTargetUser.id}/password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newPassword: newStaffPassword }),
+      });
+
+      const json = await res.json();
+      if (!res.ok) {
+        setResetError(json.error || 'Gagal mengubah password');
+        setResettingPassword(false);
+        return;
+      }
+
+      setResetSuccess(true);
+    } catch {
+      setResetError('Terjadi kesalahan jaringan');
+    }
+    setResettingPassword(false);
+  }
+
+  function generateRandomPassword() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = '';
+    for (let i = 0; i < 4; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setNewStaffPassword(`Rimasa@${code}`);
+  }
+
+  function getWhatsAppMessage(emp: Profile, pass: string): string {
+    return (
+      `*INFORMASI AKUN & PASSWORD PRESENSI MYRIMASA*\n` +
+      `----------------------------------------\n` +
+      `Halo *${emp.name}*,\n` +
+      `Berikut kredensial login akun presensi Anda di sistem Myrimasa:\n\n` +
+      `🌐 *Website Presensi:* https://rimasa.my.id\n` +
+      `📧 *Email (Login):* ${emp.email}\n` +
+      `📍 *Lokasi KHDTK:* ${emp.location_name || 'KHDTK Penugasan'}\n` +
+      `🔑 *Password Baru:* ${pass}\n` +
+      `----------------------------------------\n` +
+      `Silakan buka https://rimasa.my.id melalui browser HP dan login. Anda dapat mengganti password mandiri kapan saja di menu profil/header.`
+    );
+  }
+
+  function copyWaMessage() {
+    if (!resetTargetUser) return;
+    const msg = getWhatsAppMessage(resetTargetUser, newStaffPassword);
+    navigator.clipboard.writeText(msg);
+    setCopiedWa(true);
+    setTimeout(() => setCopiedWa(false), 2500);
   }
 
   async function handleDelete(id: string, empName: string) {
@@ -101,12 +183,12 @@ export default function AdminEmployeesPage() {
       <div className="page-header">
         <div>
           <h1 className="page-title">Manajemen Karyawan & Staff</h1>
-          <p className="page-subtitle">{employees.length} akun terdaftar di sistem</p>
+          <p className="page-subtitle">{employees.length} akun terdaftar di sistem rimasa.my.id</p>
         </div>
         <button
           id="btn-add-employee"
           className="btn btn-primary"
-          onClick={() => { setShowModal(true); setFormError(''); setFormSuccess(''); }}
+          onClick={() => { setShowAddModal(true); setFormError(''); setFormSuccess(''); }}
         >
           ➕ Tambah Karyawan Baru
         </button>
@@ -123,12 +205,12 @@ export default function AdminEmployeesPage() {
             <thead>
               <tr>
                 <th>Nama</th>
-                <th>Email</th>
-                <th>Lokasi KHDTK Penugasan</th>
+                <th>Email / Login</th>
+                <th>Lokasi Penugasan</th>
                 <th>Role</th>
                 <th>Status</th>
                 <th>Terdaftar</th>
-                <th>Aksi</th>
+                <th style={{ textAlign: 'right' }}>Aksi</th>
               </tr>
             </thead>
             <tbody>
@@ -185,14 +267,32 @@ export default function AdminEmployeesPage() {
                       {new Date(e.created_at).toLocaleDateString('id-ID')}
                     </td>
                     <td>
-                      <button
-                        className="btn btn-ghost btn-sm"
-                        style={{ color: '#dc2626' }}
-                        onClick={() => handleDelete(e.id, e.name)}
-                        title="Hapus Akun"
-                      >
-                        🗑️ Hapus
-                      </button>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px' }}>
+                        <button
+                          className="btn btn-ghost btn-sm"
+                          style={{
+                            color: '#1e40af',
+                            background: '#eff6ff',
+                            border: '1px solid #bfdbfe',
+                            padding: '5px 9px',
+                            fontSize: '12px',
+                            fontWeight: '700',
+                            borderRadius: '8px',
+                          }}
+                          onClick={() => handleOpenPasswordReset(e)}
+                          title="Reset atau Ganti Password Staff"
+                        >
+                          🔑 Ganti Password
+                        </button>
+                        <button
+                          className="btn btn-ghost btn-sm"
+                          style={{ color: '#dc2626', padding: '5px 8px', fontSize: '12px' }}
+                          onClick={() => handleDelete(e.id, e.name)}
+                          title="Hapus Akun"
+                        >
+                          🗑️ Hapus
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -209,22 +309,22 @@ export default function AdminEmployeesPage() {
       )}
 
       {/* Modal Tambah Karyawan */}
-      {showModal && (
-        <div className="modal-overlay centered">
-          <div className="modal centered-modal" style={{ maxWidth: '460px' }}>
+      {showAddModal && (
+        <div className="modal-overlay centered" style={{ zIndex: 9999 }}>
+          <div className="modal centered-modal" style={{ maxWidth: '460px', width: '92%' }}>
             <div className="flex justify-between items-center mb-16">
               <h2 className="modal-title">➕ Tambah Akun Baru</h2>
               <button
                 type="button"
                 className="btn btn-ghost btn-sm"
-                onClick={() => setShowModal(false)}
+                onClick={() => setShowAddModal(false)}
               >
                 ✕
               </button>
             </div>
 
             <p className="modal-subtitle">
-              Akun akan langsung aktif dan terhubung ke lokasi KHDTK yang dipilih.
+              Akun akan langsung aktif dan terhubung ke domain <strong>rimasa.my.id</strong>.
             </p>
 
             {formError && (
@@ -248,7 +348,7 @@ export default function AdminEmployeesPage() {
                   id="modal-emp-name"
                   type="text"
                   className="form-input"
-                  placeholder="Contoh: Agus Sutrisno"
+                  placeholder="Contoh: Zulpan"
                   value={name}
                   onChange={e => setName(e.target.value)}
                   required
@@ -256,12 +356,12 @@ export default function AdminEmployeesPage() {
               </div>
 
               <div className="form-group">
-                <label className="form-label" htmlFor="modal-emp-email">Email</label>
+                <label className="form-label" htmlFor="modal-emp-email">Email (Username Login)</label>
                 <input
                   id="modal-emp-email"
                   type="email"
                   className="form-input"
-                  placeholder="petugas@khdtk.id"
+                  placeholder="petugas@gmail.com"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   required
@@ -272,9 +372,9 @@ export default function AdminEmployeesPage() {
                 <label className="form-label" htmlFor="modal-emp-password">Password Awal</label>
                 <input
                   id="modal-emp-password"
-                  type="password"
+                  type="text"
                   className="form-input"
-                  placeholder="Minimal 6 karakter"
+                  placeholder="Minimal 6 karakter (contoh: Rimasa#2026)"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   required
@@ -283,15 +383,15 @@ export default function AdminEmployeesPage() {
               </div>
 
               <div className="form-group">
-                <label className="form-label" htmlFor="modal-emp-role">Role</label>
+                <label className="form-label" htmlFor="modal-emp-role">Role Pengguna</label>
                 <select
                   id="modal-emp-role"
                   className="form-select"
                   value={role}
                   onChange={e => setRole(e.target.value as 'employee' | 'admin')}
                 >
-                  <option value="employee">👤 Karyawan / Staff (Employee)</option>
-                  <option value="admin">🛡️ Administrator (Admin)</option>
+                  <option value="employee">👤 Karyawan / Staff Lapangan</option>
+                  <option value="admin">🛡️ Administrator</option>
                 </select>
               </div>
 
@@ -320,7 +420,7 @@ export default function AdminEmployeesPage() {
                 <button
                   type="button"
                   className="btn btn-secondary btn-full"
-                  onClick={() => setShowModal(false)}
+                  onClick={() => setShowAddModal(false)}
                 >
                   Batal
                 </button>
@@ -334,6 +434,198 @@ export default function AdminEmployeesPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Reset / Ganti Password Staff oleh Admin */}
+      {resetTargetUser && (
+        <div className="modal-overlay centered" style={{ zIndex: 9999 }}>
+          <div className="modal centered-modal" style={{ maxWidth: '480px', width: '92%' }}>
+            <div className="flex justify-between items-center mb-16">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{
+                  width: '36px', height: '36px', borderRadius: '10px',
+                  background: '#dbeafe', color: '#1e40af',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px',
+                }}>
+                  🔑
+                </div>
+                <div>
+                  <h2 className="modal-title" style={{ fontSize: '17px' }}>Ganti Password Staff</h2>
+                  <p className="modal-subtitle" style={{ fontSize: '12px' }}>
+                    {resetTargetUser.name} · {resetTargetUser.email}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                onClick={() => setResetTargetUser(null)}
+              >
+                ✕
+              </button>
+            </div>
+
+            {resetError && (
+              <div className="alert alert-error mb-16" style={{ fontSize: '13px' }}>
+                <span>⚠️</span>
+                <span>{resetError}</span>
+              </div>
+            )}
+
+            {resetSuccess ? (
+              <div>
+                <div className="alert alert-success mb-16" style={{ fontSize: '13px' }}>
+                  <span>✅</span>
+                  <div>
+                    <strong>Password berhasil diubah!</strong>
+                    <div style={{ marginTop: '2px', fontSize: '12px' }}>
+                      Password baru untuk <strong>{resetTargetUser.name}</strong> adalah:
+                    </div>
+                    <div style={{
+                      margin: '8px 0',
+                      padding: '8px 12px',
+                      background: '#ffffff',
+                      border: '1px solid #86efac',
+                      borderRadius: '8px',
+                      fontFamily: 'monospace',
+                      fontSize: '15px',
+                      fontWeight: '800',
+                      color: '#166534',
+                      letterSpacing: '0.5px',
+                    }}>
+                      {newStaffPassword}
+                    </div>
+                  </div>
+                </div>
+
+                <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '12px' }}>
+                  Bagikan informasi akun dan password baru ini langsung ke staf melalui WhatsApp:
+                </p>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={copyWaMessage}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      padding: '12px',
+                      borderRadius: '10px',
+                      background: copiedWa ? '#16a34a' : '#1e5631',
+                    }}
+                  >
+                    <span>{copiedWa ? '✅' : '📋'}</span>
+                    <span>{copiedWa ? 'Format Pesan WA Berhasil Disalin!' : 'Salin Pesan Format WhatsApp'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => setResetTargetUser(null)}
+                    style={{ width: '100%', padding: '10px', borderRadius: '10px' }}
+                  >
+                    Selesai & Tutup
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleResetPasswordSubmit}>
+                <div style={{
+                  padding: '10px 14px',
+                  background: '#f8fafc',
+                  borderRadius: '10px',
+                  border: '1px solid #e2e8f0',
+                  marginBottom: '16px',
+                  fontSize: '12px',
+                  color: '#475569',
+                }}>
+                  📍 <strong>Lokasi Penugasan:</strong> {resetTargetUser.location_name || 'KHDTK'}<br />
+                  🌐 <strong>Domain Login:</strong> https://rimasa.my.id
+                </div>
+
+                <div className="form-group" style={{ marginBottom: '14px' }}>
+                  <label className="form-label" style={{ fontSize: '12px', fontWeight: '700' }}>
+                    Password Baru Staff
+                  </label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type={showNewStaffPassword ? 'text' : 'password'}
+                      className="form-input"
+                      style={{ paddingRight: '42px', fontSize: '14px', fontFamily: 'monospace' }}
+                      value={newStaffPassword}
+                      onChange={e => setNewStaffPassword(e.target.value)}
+                      required
+                      minLength={6}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewStaffPassword(!showNewStaffPassword)}
+                      style={{
+                        position: 'absolute', right: '10px', top: '50%',
+                        transform: 'translateY(-50%)', background: 'none', border: 'none',
+                        cursor: 'pointer', fontSize: '14px',
+                      }}
+                      tabIndex={-1}
+                    >
+                      {showNewStaffPassword ? '🙈' : '👁️'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Quick Generator Buttons */}
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm"
+                    style={{ fontSize: '11px', background: '#f1f5f9', border: '1px solid #cbd5e1' }}
+                    onClick={generateRandomPassword}
+                  >
+                    🎲 Buat Password Acak
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm"
+                    style={{ fontSize: '11px', background: '#f1f5f9', border: '1px solid #cbd5e1' }}
+                    onClick={() => setNewStaffPassword('khdtk2026')}
+                  >
+                    🔑 Gunakan "khdtk2026"
+                  </button>
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    style={{ flex: 1, padding: '10px', borderRadius: '10px' }}
+                    onClick={() => setResetTargetUser(null)}
+                    disabled={resettingPassword}
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    style={{ flex: 2, padding: '10px', borderRadius: '10px' }}
+                    disabled={resettingPassword}
+                  >
+                    {resettingPassword ? (
+                      <>
+                        <span className="spinner" style={{ width: '14px', height: '14px' }} />
+                        <span>Menyimpan...</span>
+                      </>
+                    ) : (
+                      'Simpan Password Baru'
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

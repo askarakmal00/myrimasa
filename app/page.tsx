@@ -1,5 +1,6 @@
 import { getProfile } from '@/lib/auth';
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 import { getPresenceStatus, PRESENCE_WINDOWS } from '@/lib/time';
 import { getMyReportToday } from './actions';
 import PresenceCard from '@/components/PresenceCard';
@@ -83,15 +84,36 @@ export default async function HomePage() {
           />
         </div>
 
-        {/* Bottom Notice Card */}
-        <div className="notice-card fade-in" style={{ marginTop: '16px' }}>
-          <span className="notice-icon">ⓘ</span>
-          <span>Pastikan Anda melakukan presensi sesuai jadwal yang telah ditentukan.</span>
+        {/* Bottom Notice Card with Panduan Link */}
+        <div className="notice-card fade-in" style={{ marginTop: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span className="notice-icon">ⓘ</span>
+            <span>Pastikan Anda melakukan presensi sesuai jadwal yang telah ditentukan.</span>
+          </div>
+          <Link
+            href="/panduan"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              fontSize: '12px',
+              fontWeight: '700',
+              color: '#1e5631',
+              textDecoration: 'none',
+              padding: '4px 10px',
+              borderRadius: '6px',
+              background: '#ffffff',
+              border: '1px solid #bbf7d0',
+              flexShrink: 0,
+            }}
+          >
+            📖 Panduan
+          </Link>
         </div>
 
         {/* Footer */}
         <div className="footer-text">
-          © 2026 MyRimasa. Semua hak dilindungi.
+          © 2026 MyRimasa (rimasa.my.id). Semua hak dilindungi.
         </div>
       </div>
     </div>

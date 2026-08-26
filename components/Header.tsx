@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Profile } from '@/lib/types';
 import { signOut } from '@/app/actions';
 import { useState } from 'react';
+import ChangePasswordModal from './ChangePasswordModal';
 
 interface HeaderProps {
   profile: Profile | null;
@@ -11,6 +12,7 @@ interface HeaderProps {
 
 export default function Header({ profile }: HeaderProps) {
   const [signingOut, setSigningOut] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
 
   async function handleSignOut() {
     setSigningOut(true);
@@ -18,127 +20,99 @@ export default function Header({ profile }: HeaderProps) {
   }
 
   return (
-    <header style={{
-      background: '#ffffff',
-      border: '1px solid #e2e8f0',
-      borderRadius: '16px',
-      padding: '12px 20px',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      boxShadow: '0 2px 12px rgba(26, 39, 68, 0.06)',
-      marginBottom: '20px',
-      gap: '12px',
-    }}>
+    <>
+      <header className="main-header">
+        {/* Brand / Logo */}
+        <Link href="/" className="main-header-brand">
+          <img
+            src="/logo.png"
+            alt="Myrimasa"
+            className="main-header-logo-img"
+          />
+        </Link>
 
-      {/* Brand — logo displayed large enough to be readable */}
-      <Link
-        href="/"
-        style={{
-          textDecoration: 'none',
-          display: 'flex',
-          alignItems: 'center',
-          flexShrink: 0,
-        }}
-      >
-        <img
-          src="/logo.png"
-          alt="Myrimasa"
-          style={{
-            width: '140px',
-            height: 'auto',
-            objectFit: 'contain',
-            display: 'block',
-          }}
-        />
-      </Link>
+        {/* Right side: Actions & User & Sign out */}
+        {profile ? (
+          <div className="main-header-right">
+            {/* Guide Quick Link */}
+            <Link
+              href="/panduan"
+              className="main-header-action-btn"
+              title="Panduan Penggunaan"
+              aria-label="Buka panduan penggunaan"
+            >
+              <span style={{ fontSize: '15px' }}>📖</span>
+              <span className="header-text-label">Panduan</span>
+            </Link>
 
-      {/* Right: User + Logout */}
+            {/* Change Password Quick Button */}
+            <button
+              type="button"
+              id="btn-change-password-header"
+              onClick={() => setShowPasswordModal(true)}
+              className="main-header-action-btn"
+              title="Ganti Password Akun"
+              aria-label="Ganti password akun"
+            >
+              <span style={{ fontSize: '15px' }}>🔑</span>
+              <span className="header-text-label">Password</span>
+            </button>
+
+            {/* User Profile Badge (Clickable to change password) */}
+            <div
+              className="main-header-user-badge"
+              onClick={() => setShowPasswordModal(true)}
+              title={`Klik untuk ganti password (${profile.name})`}
+              style={{ cursor: 'pointer' }}
+            >
+              <div className="main-header-avatar">
+                {profile.name?.charAt(0)?.toUpperCase() || '?'}
+              </div>
+              <div className="main-header-user-info">
+                <div className="main-header-user-name">
+                  {profile.name}
+                </div>
+                <div className="main-header-user-role">
+                  {profile.role === 'admin' ? 'Admin' : 'Staff'}
+                </div>
+              </div>
+            </div>
+
+            {/* Logout Button */}
+            <button
+              id="btn-sign-out"
+              onClick={handleSignOut}
+              disabled={signingOut}
+              title="Keluar dari akun"
+              aria-label="Keluar dari akun"
+              className="main-header-logout-btn"
+            >
+              {signingOut ? (
+                <span className="spinner" style={{ width: '12px', height: '12px', borderColor: '#cbd5e1', borderTopColor: '#64748b' }} />
+              ) : (
+                <span style={{ fontSize: '13px' }}>↪</span>
+              )}
+              <span className="header-logout-text">Keluar</span>
+            </button>
+          </div>
+        ) : (
+          <div className="main-header-right">
+            <Link href="/login" className="btn btn-primary btn-sm">
+              Masuk
+            </Link>
+          </div>
+        )}
+      </header>
+
+      {/* Change Password Modal */}
       {profile && (
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '10px',
-          flexShrink: 0,
-        }}>
-          {/* Avatar with initial */}
-          <div style={{
-            width: '36px',
-            height: '36px',
-            borderRadius: '50%',
-            background: 'linear-gradient(135deg, #f9a8c9 0%, #c7d2fe 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '14px',
-            fontWeight: '800',
-            color: '#1a2744',
-            flexShrink: 0,
-            border: '2px solid #fff',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
-          }}>
-            {profile.name?.charAt(0)?.toUpperCase() || '?'}
-          </div>
-
-          {/* Name + Role (hidden on tiny screens) */}
-          <div className="header-user-info">
-            <div style={{
-              fontWeight: '800',
-              fontSize: '13px',
-              color: '#1a2744',
-              lineHeight: 1.2,
-              whiteSpace: 'nowrap',
-            }}>
-              {profile.name}
-            </div>
-            <div style={{
-              fontSize: '11px',
-              color: '#f472b6',
-              fontWeight: '600',
-            }}>
-              {profile.role === 'admin' ? 'Administrator' : 'Staff'}
-            </div>
-          </div>
-
-          {/* Divider */}
-          <div style={{
-            width: '1px',
-            height: '28px',
-            background: '#e2e8f0',
-            flexShrink: 0,
-          }} />
-
-          {/* Logout */}
-          <button
-            id="btn-sign-out"
-            onClick={handleSignOut}
-            disabled={signingOut}
-            title="Keluar"
-            aria-label="Keluar dari akun"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '5px',
-              padding: '7px 14px',
-              borderRadius: '9px',
-              border: '1.5px solid #e2e8f0',
-              background: '#f8fafc',
-              color: '#64748b',
-              fontSize: '13px',
-              fontWeight: '700',
-              cursor: 'pointer',
-              transition: 'all 0.18s',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {signingOut
-              ? <span className="spinner" style={{ width: '12px', height: '12px', borderColor: '#cbd5e1', borderTopColor: '#64748b' }} />
-              : <span>↪</span>
-            }
-            <span>Keluar</span>
-          </button>
-        </div>
+        <ChangePasswordModal
+          isOpen={showPasswordModal}
+          onClose={() => setShowPasswordModal(false)}
+          userEmail={profile.email}
+          userName={profile.name}
+        />
       )}
-    </header>
+    </>
   );
 }
