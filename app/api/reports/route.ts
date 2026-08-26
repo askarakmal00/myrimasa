@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase';
 import { isWithinWindow, getTodayLocalDate } from '@/lib/time';
 import { uploadFileToDrive } from '@/lib/google-drive';
 import { SessionType } from '@/lib/types';
+import { getAssignedLocationName } from '@/lib/staff-assignments';
 
 const sessionLabels: Record<SessionType, string> = {
   morning: 'Pagi',
@@ -24,6 +25,7 @@ export async function POST(request: Request) {
     const formData = await request.formData();
     const session_type = formData.get('session_type') as SessionType;
     const location_id = formData.get('location_id') as string;
+    const formLocationName = formData.get('location_name') as string;
     const routine_activity = formData.get('routine_activity') as string;
     const incident_activity = formData.get('incident_activity') as string;
     const field_condition = formData.get('field_condition') as string;
@@ -39,9 +41,6 @@ export async function POST(request: Request) {
     // Validate required fields
     if (!session_type || !['morning', 'afternoon', 'evening'].includes(session_type)) {
       return NextResponse.json({ error: 'Session type tidak valid (harus morning, afternoon, atau evening)' }, { status: 400 });
-    }
-    if (!location_id) {
-      return NextResponse.json({ error: 'Lokasi wajib dipilih' }, { status: 400 });
     }
     if (!latitude || !longitude) {
       return NextResponse.json({ error: 'Data GPS wajib ada' }, { status: 400 });
@@ -80,14 +79,29 @@ export async function POST(request: Request) {
       );
     }
 
-    // === GET LOCATION INFO FOR DRIVE FOLDER ===
-    const { data: location } = await adminClient
-      .from('locations')
-      .select('name')
-      .eq('id', location_id)
-      .single();
+    // === RESOLVE LOCATION INFO ===
+    const assignedLocName = getAssignedLocationName(profile.email, profile.name);
+    let finalLocationId = location_id || profile.location_id;
+    let locationName = formLocationName || profile.location_name || assignedLocName || 'KHDTK';
 
-    const locationName = location?.name || 'KHDTK';
+    if (finalLocationId) {
+      const { data: locRow } = await adminClient.from('locations').select('name').eq('id', finalLocationId).single();
+      if (locRow?.name) {
+        locationName = locRow.name;
+      }
+    } else if (locationName) {
+      const { data: locRow } = await adminClient.from('locations').select('id, name').ilike('name', locationName).single();
+      if (locRow?.id) {
+        finalLocationId = locRow.id;
+        locationName = locRow.name;
+      } else {
+        const { data: newLoc } = await adminClient.from('locations').insert({ name: locationName, active: true }).select('id, name').single();
+        if (newLoc?.id) {
+          finalLocationId = newLoc.id;
+        }
+      }
+    }
+
     const maps_url = `https://www.google.com/maps?q=${latitude},${longitude}`;
 
     // === CREATE REPORT ===
@@ -98,7 +112,7 @@ export async function POST(request: Request) {
         session_type,
         report_date: reportDate,
         timestamp: serverNow.toISOString(),
-        location_id,
+        location_id: finalLocationId || null,
         routine_activity,
         incident_activity,
         field_condition,

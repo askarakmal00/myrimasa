@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getProfile } from '@/lib/auth';
 import { createAdminClient } from '@/lib/supabase';
+import { getAssignedLocationName } from '@/lib/staff-assignments';
 
 // GET /api/admin/employees — List all employees (admin only)
 export async function GET() {
@@ -27,10 +28,11 @@ export async function GET() {
 
     const enrichedProfiles = (data || []).map((p: any) => {
       const meta = authMap.get(p.id) || {};
+      const assignedLocName = getAssignedLocationName(p.email, p.name);
       return {
         ...p,
         location_id: p.location_id || meta.location_id || null,
-        location_name: p.location_name || meta.location_name || null,
+        location_name: p.location_name || meta.location_name || assignedLocName || null,
       };
     });
 

@@ -39,7 +39,7 @@ export async function GET(request: Request) {
     if (error) return NextResponse.json({ error: 'Gagal memuat data' }, { status: 500 });
 
     const sessionLabels: Record<string, string> = {
-      morning: 'Pagi (06.00-08.00)',
+      morning: 'Pagi (06.00-07.45)',
       afternoon: 'Siang (13.00-14.00)',
       evening: 'Sore (16.00-23.59)',
     };

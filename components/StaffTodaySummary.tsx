@@ -232,7 +232,7 @@ export default function StaffTodaySummary({
           </div>
           <div>
             <div style={{ fontSize: '11px', fontWeight: '800', color: '#0f172a' }}>PAGI</div>
-            <div style={{ fontSize: '9px', color: '#64748b' }}>06.00 - 08.00</div>
+            <div style={{ fontSize: '9px', color: '#64748b' }}>06.00 - 07.45</div>
           </div>
           <div style={{ width: '100%', marginTop: '2px' }}>
             {renderSessionPill(morningReport, morningStatus)}

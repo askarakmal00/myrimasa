@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { createAdminClient } from './supabase';
 import { Profile } from './types';
+import { getAssignedLocationName } from './staff-assignments';
 
 const SESSION_COOKIE = 'myrimasa_session';
 
@@ -53,6 +54,8 @@ export async function getProfile(): Promise<Profile | null> {
   const session = await getSession();
   if (!session) return null;
 
+  const assignedLocName = getAssignedLocationName(session.email, session.name);
+
   try {
     const adminClient = createAdminClient();
 
@@ -66,8 +69,16 @@ export async function getProfile(): Promise<Profile | null> {
       .eq('id', session.id)
       .single();
 
-    const location_id = data?.location_id || authMeta.location_id || session.location_id || null;
-    const location_name = data?.location_name || authMeta.location_name || session.location_name || null;
+    const location_name = data?.location_name || authMeta.location_name || session.location_name || assignedLocName || null;
+    let location_id = data?.location_id || authMeta.location_id || session.location_id || null;
+
+    // Auto-resolve location_id from locations table if not found yet
+    if (!location_id && location_name) {
+      const { data: locData } = await adminClient.from('locations').select('id').ilike('name', location_name).single();
+      if (locData?.id) {
+        location_id = locData.id;
+      }
+    }
 
     if (data) {
       return {
@@ -96,7 +107,7 @@ export async function getProfile(): Promise<Profile | null> {
       role: session.role,
       status: 'active',
       location_id: session.location_id || null,
-      location_name: session.location_name || null,
+      location_name: session.location_name || assignedLocName || null,
       created_at: new Date().toISOString(),
     };
   }

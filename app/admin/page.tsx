@@ -121,7 +121,7 @@ export default async function AdminDashboardPage() {
       {/* 5 Stats Cards Grid with 'Sudah vs Belum' Highlights */}
       <div className="stats-grid">
         <div className="stat-card">
-          <div className="stat-card-label">Presensi Pagi (06.00 - 08.00)</div>
+          <div className="stat-card-label">Presensi Pagi (06.00 - 07.45)</div>
           <div className="stat-card-value" style={{ color: '#d97706' }}>
             {morningDone} <span style={{ fontSize: '16px', color: '#94a3b8', fontWeight: '500' }}>/ {totalEmployees}</span>
           </div>

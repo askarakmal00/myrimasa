@@ -150,7 +150,7 @@ export default function AdminReportsPage() {
               onChange={e => setSessionType(e.target.value)}
             >
               <option value="">Semua Sesi</option>
-              <option value="morning">☀️ Pagi (06.00 - 08.00)</option>
+              <option value="morning">☀️ Pagi (06.00 - 07.45)</option>
               <option value="afternoon">🌤️ Siang (13.00 - 14.00)</option>
               <option value="evening">🌙 Sore (16.00 - 23.59)</option>
             </select>
