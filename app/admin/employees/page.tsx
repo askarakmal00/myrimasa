@@ -40,9 +40,12 @@ export default function AdminEmployeesPage() {
   const [editError, setEditError] = useState('');
   const [editSuccess, setEditSuccess] = useState(false);
 
-  // Universal Share WA Modal State (For any existing account)
+  // Universal Share WA Modal State (Updates password & blasts to WA simultaneously)
   const [shareWaTarget, setShareWaTarget] = useState<Profile | null>(null);
-  const [sharePassword, setSharePassword] = useState('');
+  const [sharePassword, setSharePassword] = useState('khdtk2026');
+  const [updatingPasswordAndShare, setUpdatingPasswordAndShare] = useState(false);
+  const [shareError, setShareError] = useState('');
+  const [shareSuccess, setShareSuccess] = useState(false);
 
   // Copy feedback state
   const [copiedWa, setCopiedWa] = useState(false);
@@ -83,10 +86,6 @@ export default function AdminEmployeesPage() {
       loc = locIdOrName || 'KHDTK Penugasan';
     }
 
-    const passwordSection = pass.trim()
-      ? `🔑 *Password:*\n\`\`\`${pass.trim()}\`\`\`\n\n`
-      : `🔑 *Password:*\n_(Gunakan password yang telah terdaftar)_\n\n`;
-
     return (
       `🌲 *AKUN PRESENSI DIGITAL KHDTK*\n` +
       `_Sistem Pelaporan & Presensi Myrimasa_\n\n` +
@@ -97,7 +96,8 @@ export default function AdminEmployeesPage() {
       `https://rimasa.my.id\n\n` +
       `📧 *Email (Username):*\n` +
       `\`\`\`${empEmail}\`\`\`\n\n` +
-      passwordSection +
+      `🔑 *Password:*\n` +
+      `\`\`\`${pass}\`\`\`\n\n` +
       `📍 *Lokasi Tugas:*\n` +
       `*${loc}*\n` +
       `━━━━━━━━━━━━━━━━━━━━\n\n` +
@@ -190,7 +190,9 @@ export default function AdminEmployeesPage() {
 
   function handleOpenShareWaModal(emp: Profile) {
     setShareWaTarget(emp);
-    setSharePassword('');
+    setSharePassword('khdtk2026');
+    setShareError('');
+    setShareSuccess(false);
     setCopiedWa(false);
   }
 
@@ -201,6 +203,100 @@ export default function AdminEmployeesPage() {
       code += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     return `Rimasa@${code}`;
+  }
+
+  async function handleUpdatePasswordAndOpenWa() {
+    if (!shareWaTarget) return;
+    const cleanPass = sharePassword.trim();
+    if (!cleanPass) {
+      setShareError('Password baru wajib diisi (minimal 6 karakter)');
+      return;
+    }
+    if (cleanPass.length < 6) {
+      setShareError('Password baru minimal 6 karakter');
+      return;
+    }
+
+    setUpdatingPasswordAndShare(true);
+    setShareError('');
+
+    try {
+      // 1. Directly update password in database
+      const res = await fetch(`/api/admin/employees/${shareWaTarget.id}/password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newPassword: cleanPass }),
+      });
+
+      const json = await res.json();
+      if (!res.ok) {
+        setShareError(json.error || 'Gagal mengubah password di sistem database');
+        setUpdatingPasswordAndShare(false);
+        return;
+      }
+
+      // 2. Open WhatsApp with exact same new password
+      const url = getWhatsAppShareUrl(
+        shareWaTarget.name,
+        shareWaTarget.email,
+        cleanPass,
+        shareWaTarget.location_name || '',
+        shareWaTarget.phone || ''
+      );
+
+      window.open(url, '_blank');
+      setShareSuccess(true);
+      fetchEmployees();
+    } catch {
+      setShareError('Terjadi kesalahan jaringan');
+    }
+    setUpdatingPasswordAndShare(false);
+  }
+
+  async function handleUpdatePasswordAndCopyWa() {
+    if (!shareWaTarget) return;
+    const cleanPass = sharePassword.trim();
+    if (!cleanPass) {
+      setShareError('Password baru wajib diisi (minimal 6 karakter)');
+      return;
+    }
+    if (cleanPass.length < 6) {
+      setShareError('Password baru minimal 6 karakter');
+      return;
+    }
+
+    setUpdatingPasswordAndShare(true);
+    setShareError('');
+
+    try {
+      // 1. Directly update password in database
+      const res = await fetch(`/api/admin/employees/${shareWaTarget.id}/password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newPassword: cleanPass }),
+      });
+
+      const json = await res.json();
+      if (!res.ok) {
+        setShareError(json.error || 'Gagal mengubah password di sistem database');
+        setUpdatingPasswordAndShare(false);
+        return;
+      }
+
+      // 2. Copy to clipboard
+      copyWaMessage(
+        shareWaTarget.name,
+        shareWaTarget.email,
+        cleanPass,
+        shareWaTarget.location_name || ''
+      );
+
+      setShareSuccess(true);
+      fetchEmployees();
+    } catch {
+      setShareError('Terjadi kesalahan jaringan');
+    }
+    setUpdatingPasswordAndShare(false);
   }
 
   async function handleSaveEdit(e: React.FormEvent) {
@@ -388,11 +484,11 @@ export default function AdminEmployeesPage() {
                     </td>
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px' }}>
-                        {/* Universal Share WA Button for ANY Account */}
+                        {/* Reset Password & Share WA Button */}
                         <button
                           className="btn btn-sm"
                           style={{
-                            background: '#22c55e',
+                            background: '#16a34a',
                             color: '#ffffff',
                             padding: '5px 10px',
                             fontSize: '12px',
@@ -404,10 +500,10 @@ export default function AdminEmployeesPage() {
                             gap: '4px',
                           }}
                           onClick={() => handleOpenShareWaModal(e)}
-                          title="Bagikan data akun login ini ke WhatsApp petugas"
+                          title="Reset password baru & langsung kirim ke WhatsApp petugas"
                         >
                           <span>📲</span>
-                          <span>Kirim WA</span>
+                          <span>Reset &amp; Kirim WA</span>
                         </button>
 
                         {/* Edit Button */}
@@ -453,7 +549,7 @@ export default function AdminEmployeesPage() {
         </div>
       )}
 
-      {/* Modal Universal Share Kredensial ke WhatsApp (Untuk Akun Existing Apapun) */}
+      {/* Modal Reset Password & Blast ke WhatsApp */}
       {shareWaTarget && (
         <div className="modal-overlay centered" style={{ zIndex: 9999 }}>
           <div className="modal centered-modal" style={{ maxWidth: '500px', width: '92%' }}>
@@ -467,9 +563,9 @@ export default function AdminEmployeesPage() {
                   📲
                 </div>
                 <div>
-                  <h2 className="modal-title" style={{ fontSize: '17px' }}>Bagikan Akun ke WhatsApp</h2>
+                  <h2 className="modal-title" style={{ fontSize: '17px' }}>Reset &amp; Kirim Akun via WhatsApp</h2>
                   <p className="modal-subtitle" style={{ fontSize: '12px' }}>
-                    {shareWaTarget.name} ({shareWaTarget.phone || 'Nomor HP belum ada'})
+                    {shareWaTarget.name} ({shareWaTarget.phone || 'Nomor HP belum disetel'})
                   </p>
                 </div>
               </div>
@@ -481,6 +577,22 @@ export default function AdminEmployeesPage() {
                 ✕
               </button>
             </div>
+
+            {shareError && (
+              <div className="alert alert-error mb-16" style={{ fontSize: '13px' }}>
+                <span>⚠️</span>
+                <span>{shareError}</span>
+              </div>
+            )}
+
+            {shareSuccess && (
+              <div className="alert alert-success mb-16" style={{ fontSize: '13px' }}>
+                <span>✅</span>
+                <div>
+                  <strong>Password berhasil diperbarui di database &amp; siap dikirim!</strong>
+                </div>
+              </div>
+            )}
 
             <div style={{
               background: '#f8fafc',
@@ -499,15 +611,17 @@ export default function AdminEmployeesPage() {
 
             <div className="form-group" style={{ marginBottom: '16px' }}>
               <label className="form-label" style={{ fontSize: '12px', fontWeight: '700' }}>
-                Masukkan Password Akun:
+                Setel Password Baru (Akan Langsung Diubah di Sistem Database): <span style={{ color: '#dc2626' }}>*</span>
               </label>
               <input
                 type="text"
                 className="form-input"
                 value={sharePassword}
                 onChange={e => setSharePassword(e.target.value)}
-                placeholder="Ketik password milik akun ini (contoh: rimasa123 / khdtk2026)"
+                placeholder="Ketik password baru (contoh: rimasa123 / khdtk2026)"
                 style={{ fontFamily: 'monospace', fontWeight: '700' }}
+                required
+                minLength={6}
               />
               <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
                 <button
@@ -526,55 +640,42 @@ export default function AdminEmployeesPage() {
                 >
                   🎲 Password Acak
                 </button>
-                <button
-                  type="button"
-                  className="btn btn-ghost btn-sm"
-                  style={{ fontSize: '11px', background: '#f1f5f9', border: '1px solid #cbd5e1' }}
-                  onClick={() => setSharePassword('')}
-                >
-                  Kosongkan
-                </button>
+              </div>
+              <div className="form-hint" style={{ marginTop: '6px', color: '#166534' }}>
+                ⚡ Saat Anda menekan tombol di bawah, password akun <strong>langsung diubah di database</strong> dan pesan WhatsApp akan otomatis terbuka.
               </div>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <a
-                href={getWhatsAppShareUrl(
-                  shareWaTarget.name,
-                  shareWaTarget.email,
-                  sharePassword,
-                  shareWaTarget.location_name || '',
-                  shareWaTarget.phone || ''
-                )}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                type="button"
                 className="btn btn-primary"
+                onClick={handleUpdatePasswordAndOpenWa}
+                disabled={updatingPasswordAndShare}
                 style={{
                   width: '100%',
                   padding: '12px',
                   borderRadius: '10px',
                   background: '#16a34a',
-                  textAlign: 'center',
-                  textDecoration: 'none',
                   fontWeight: '800',
                   fontSize: '13.5px',
                 }}
               >
-                📲 Buka Chat WhatsApp Langsung
-              </a>
+                {updatingPasswordAndShare ? (
+                  <><span className="spinner" /> Mengubah Password &amp; Membuka WA...</>
+                ) : (
+                  '📲 Simpan Password & Buka WhatsApp'
+                )}
+              </button>
 
               <button
                 type="button"
                 className="btn btn-secondary"
-                onClick={() => copyWaMessage(
-                  shareWaTarget.name,
-                  shareWaTarget.email,
-                  sharePassword,
-                  shareWaTarget.location_name || ''
-                )}
+                onClick={handleUpdatePasswordAndCopyWa}
+                disabled={updatingPasswordAndShare}
                 style={{ width: '100%', padding: '10px', borderRadius: '10px' }}
               >
-                {copiedWa ? '✅ Pesan Format WA Disalin!' : '📋 Salin Format Pesan WA'}
+                {copiedWa ? '✅ Password Diubah & Pesan Disalin!' : '📋 Simpan Password & Salin Format WA'}
               </button>
 
               <button
@@ -1052,7 +1153,7 @@ export default function AdminEmployeesPage() {
                           type="button"
                           className="btn btn-ghost btn-sm"
                           style={{ fontSize: '11px', background: '#f1f5f9', border: '1px solid #cbd5e1' }}
-                          onClick={() => setEditPassword(generateRandomPassword())}
+                          onClick={generateRandomPassword}
                         >
                           🎲 Buat Acak
                         </button>
