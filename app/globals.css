@@ -236,6 +236,16 @@ input, textarea, select {
   border-color: #fca5a5;
 }
 
+.header-user-info {
+  display: block;
+}
+
+@media (max-width: 360px) {
+  .header-user-info {
+    display: none;
+  }
+}
+
 /* ============================================
    PRESENCE CARDS (MOCKED STYLE)
    ============================================ */
@@ -1419,4 +1429,23 @@ input, textarea, select {
   }
 }
 
+/* ============================================
+   LOGIN PAGE — TWO PANEL LAYOUT
+   ============================================ */
+.login-left-panel {
+  display: none;
+}
 
+@media (min-width: 900px) {
+  .login-left-panel {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 480px;
+    min-height: 100vh;
+    background: linear-gradient(145deg, #f0f4ff 0%, #fce7f3 100%);
+    border-right: 1px solid rgba(226, 232, 240, 0.6);
+    padding: 60px 56px;
+    flex-shrink: 0;
+  }
+}

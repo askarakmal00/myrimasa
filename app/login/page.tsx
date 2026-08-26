@@ -5,8 +5,9 @@ import { redirect } from 'next/navigation';
 import LoginForm from './LoginForm';
 
 export const metadata: Metadata = {
-  title: 'Masuk — KHDTK Litbanghut',
+  title: 'Masuk ke Myrimasa',
 };
+
 
 export const dynamic = 'force-dynamic';
 

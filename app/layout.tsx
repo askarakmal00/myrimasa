@@ -3,11 +3,11 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: {
-    default: 'MyRimasa — Laporan Harian & Presensi KHDTK',
-    template: '%s | MyRimasa',
+    default: 'Myrimasa — Smart Workforce Platform',
+    template: '%s | Myrimasa',
   },
   description:
-    'Sistem Laporan Harian dan Presensi Petugas Pengamanan KHDTK Litbanghut. Gantikan Google Form dengan pengalaman yang lebih modern dan terintegrasi.',
+    'Myrimasa adalah platform manajemen tenaga kerja yang modern. Presensi digital, laporan harian, dan monitoring karyawan dalam satu aplikasi terintegrasi.',
 };
 
 export const viewport: Viewport = {

@@ -23,7 +23,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { session } = await params;
   const label = sessionTitles[session] || session;
-  return { title: `Presensi ${label} — KHDTK Litbanghut` };
+  return { title: `Presensi ${label} — Myrimasa` };
 }
 
 export default async function PresensiPage({

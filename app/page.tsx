@@ -8,7 +8,7 @@ import StaffTodaySummary from '@/components/StaffTodaySummary';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'KHDTK Litbanghut — Presensi Petugas',
+  title: 'Beranda — Myrimasa',
 };
 
 export const dynamic = 'force-dynamic';
