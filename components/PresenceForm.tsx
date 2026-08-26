@@ -181,7 +181,25 @@ export default function PresenceForm({ session, profile }: PresenceFormProps) {
 
     // Validate GPS
     if (gpsStatus !== 'success' || !gpsData) {
-      setSubmitError('GPS belum berhasil. Dapatkan lokasi terlebih dahulu sebelum submit.');
+      setSubmitError('Lokasi GPS belum terdeteksi. Harap izinkan akses lokasi (GPS) terlebih dahulu.');
+      return;
+    }
+
+    // Validate 4 text fields
+    if (!routineActivity.trim()) {
+      setSubmitError('Kolom "Kegiatan Rutin yang dilaksanakan" wajib diisi.');
+      return;
+    }
+    if (!incidentActivity.trim()) {
+      setSubmitError('Kolom "Kegiatan Insidentil yang dilaksanakan" wajib diisi (tulis "Nihil" jika tidak ada).');
+      return;
+    }
+    if (!fieldCondition.trim()) {
+      setSubmitError('Kolom "Hasil Kondisi di lapangan" wajib diisi.');
+      return;
+    }
+    if (!followUp.trim()) {
+      setSubmitError('Kolom "Tindak Lanjut/Usulan" wajib diisi.');
       return;
     }
 
@@ -393,7 +411,9 @@ export default function PresenceForm({ session, profile }: PresenceFormProps) {
           <div className="form-section-title">📋 Laporan Kegiatan</div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="field-routine">Kegiatan Rutin yang dilaksanakan</label>
+            <label className="form-label" htmlFor="field-routine">
+              Kegiatan Rutin yang dilaksanakan <span style={{ color: '#dc2626' }}>*</span>
+            </label>
             <textarea
               id="field-routine"
               className="form-textarea"
@@ -406,7 +426,9 @@ export default function PresenceForm({ session, profile }: PresenceFormProps) {
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="field-incident">Kegiatan Insidentil yang dilaksanakan</label>
+            <label className="form-label" htmlFor="field-incident">
+              Kegiatan Insidentil yang dilaksanakan <span style={{ color: '#dc2626' }}>*</span>
+            </label>
             <textarea
               id="field-incident"
               className="form-textarea"
@@ -420,7 +442,9 @@ export default function PresenceForm({ session, profile }: PresenceFormProps) {
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="field-condition">Hasil Kondisi di lapangan</label>
+            <label className="form-label" htmlFor="field-condition">
+              Hasil Kondisi di lapangan <span style={{ color: '#dc2626' }}>*</span>
+            </label>
             <textarea
               id="field-condition"
               className="form-textarea"
@@ -433,7 +457,9 @@ export default function PresenceForm({ session, profile }: PresenceFormProps) {
           </div>
 
           <div className="form-group" style={{ marginBottom: 0 }}>
-            <label className="form-label" htmlFor="field-followup">Tindak Lanjut/Usulan</label>
+            <label className="form-label" htmlFor="field-followup">
+              Tindak Lanjut/Usulan <span style={{ color: '#dc2626' }}>*</span>
+            </label>
             <textarea
               id="field-followup"
               className="form-textarea"
@@ -448,7 +474,9 @@ export default function PresenceForm({ session, profile }: PresenceFormProps) {
 
         {/* Foto/Video */}
         <div className="form-section">
-          <div className="form-section-title">📷 Foto/Video Dokumentasi</div>
+          <div className="form-section-title">
+            📷 Foto/Video Dokumentasi <span style={{ color: '#dc2626', fontSize: '13px' }}>(Wajib Min. 1) *</span>
+          </div>
           <div className="form-hint" style={{ marginBottom: '12px' }}>
             Maksimal 5 file. Format: JPG, PNG, MP4, MOV, dll.
           </div>

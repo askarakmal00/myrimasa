@@ -12,17 +12,25 @@ export default function AdminEmployeesPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [addName, setAddName] = useState('');
   const [addEmail, setAddEmail] = useState('');
-  const [addPassword, setAddPassword] = useState('');
+  const [addPhone, setAddPhone] = useState('');
+  const [addPassword, setAddPassword] = useState('khdtk2026');
   const [addRole, setAddRole] = useState<'employee' | 'admin'>('employee');
   const [addLocationId, setAddLocationId] = useState('');
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState('');
-  const [addSuccess, setAddSuccess] = useState('');
+  const [createdResult, setCreatedResult] = useState<{
+    name: string;
+    email: string;
+    phone: string;
+    password: string;
+    locationId: string;
+  } | null>(null);
 
   // Edit Modal State
   const [editEmployee, setEditEmployee] = useState<Profile | null>(null);
   const [editName, setEditName] = useState('');
   const [editEmail, setEditEmail] = useState('');
+  const [editPhone, setEditPhone] = useState('');
   const [editRole, setEditRole] = useState<'employee' | 'admin'>('employee');
   const [editLocationId, setEditLocationId] = useState('');
   const [editPassword, setEditPassword] = useState('');
@@ -31,6 +39,12 @@ export default function AdminEmployeesPage() {
   const [savingEdit, setSavingEdit] = useState(false);
   const [editError, setEditError] = useState('');
   const [editSuccess, setEditSuccess] = useState(false);
+
+  // Universal Share WA Modal State (For any existing account)
+  const [shareWaTarget, setShareWaTarget] = useState<Profile | null>(null);
+  const [sharePassword, setSharePassword] = useState('');
+
+  // Copy feedback state
   const [copiedWa, setCopiedWa] = useState(false);
 
   async function fetchEmployees() {
@@ -50,11 +64,65 @@ export default function AdminEmployeesPage() {
     fetch('/api/locations').then(r => r.json()).then(d => setLocations(Array.isArray(d) ? d : []));
   }, []);
 
+  function cleanPhoneForWa(phoneStr?: string | null): string {
+    if (!phoneStr) return '';
+    let cleaned = phoneStr.replace(/[^0-9]/g, '');
+    if (cleaned.startsWith('0')) {
+      cleaned = '62' + cleaned.substring(1);
+    } else if (cleaned.startsWith('+62')) {
+      cleaned = cleaned.substring(1);
+    } else if (!cleaned.startsWith('62')) {
+      cleaned = '62' + cleaned;
+    }
+    return cleaned;
+  }
+
+  function getWhatsAppCredentialMessage(empName: string, empEmail: string, pass: string, locIdOrName: string): string {
+    let loc = locations.find(l => l.id === locIdOrName)?.name;
+    if (!loc) {
+      loc = locIdOrName || 'KHDTK Penugasan';
+    }
+
+    const passwordSection = pass.trim()
+      ? `🔑 *Password:*\n\`\`\`${pass.trim()}\`\`\`\n\n`
+      : `🔑 *Password:*\n_(Gunakan password yang telah terdaftar)_\n\n`;
+
+    return (
+      `🌲 *AKUN PRESENSI DIGITAL KHDTK*\n` +
+      `_Sistem Pelaporan & Presensi Myrimasa_\n\n` +
+      `Halo Bapak/Ibu *${empName}*,\n` +
+      `Berikut adalah data akun resmi Anda untuk presensi lapangan:\n\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n` +
+      `🌐 *Link Website:*\n` +
+      `https://rimasa.my.id\n\n` +
+      `📧 *Email (Username):*\n` +
+      `\`\`\`${empEmail}\`\`\`\n\n` +
+      passwordSection +
+      `📍 *Lokasi Tugas:*\n` +
+      `*${loc}*\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `⏰ *Jadwal 3 Sesi Presensi:*\n` +
+      `☀️ *PAGI*  : 06.00 – 08.00 WIB\n` +
+      `🌤️ *SIANG* : 13.00 – 14.00 WIB\n` +
+      `🌙 *SORE*  : 16.00 – 23.59 WIB\n\n` +
+      `💡 *Petunjuk Masuk:*\n` +
+      `1. Buka link https://rimasa.my.id di browser HP (Chrome / Safari).\n` +
+      `2. Masukkan Email & Password di atas.\n` +
+      `3. Setelah masuk, disarankan mengganti kata sandi melalui ikon kunci (🔑) di bar atas.\n\n` +
+      `_Selamat bertugas! Hubungi Admin Rimasa bila ada kendala login._`
+    );
+  }
+
+  function getWhatsAppShareUrl(empName: string, empEmail: string, pass: string, locIdOrName: string, phoneStr: string): string {
+    const cleanPhone = cleanPhoneForWa(phoneStr);
+    const msg = getWhatsAppCredentialMessage(empName, empEmail, pass, locIdOrName);
+    return cleanPhone ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+  }
+
   async function handleAddEmployee(e: React.FormEvent) {
     e.preventDefault();
     setAdding(true);
     setAddError('');
-    setAddSuccess('');
 
     try {
       const res = await fetch('/api/admin/employees', {
@@ -63,6 +131,7 @@ export default function AdminEmployeesPage() {
         body: JSON.stringify({
           name: addName,
           email: addEmail,
+          phone: addPhone,
           password: addPassword,
           role: addRole,
           location_id: addRole === 'employee' ? addLocationId : null,
@@ -77,27 +146,38 @@ export default function AdminEmployeesPage() {
         return;
       }
 
-      setAddSuccess(`Akun untuk ${addName} berhasil dibuat!`);
-      setAddName('');
-      setAddEmail('');
-      setAddPassword('');
-      setAddRole('employee');
-      setAddLocationId('');
+      setCreatedResult({
+        name: addName,
+        email: addEmail,
+        phone: addPhone,
+        password: addPassword,
+        locationId: addLocationId,
+      });
+
       fetchEmployees();
-      setTimeout(() => {
-        setShowAddModal(false);
-        setAddSuccess('');
-      }, 1500);
     } catch {
       setAddError('Terjadi kesalahan jaringan');
     }
     setAdding(false);
   }
 
+  function handleOpenAddModal() {
+    setAddName('');
+    setAddEmail('');
+    setAddPhone('');
+    setAddPassword('khdtk2026');
+    setAddRole('employee');
+    setAddLocationId('');
+    setAddError('');
+    setCreatedResult(null);
+    setShowAddModal(true);
+  }
+
   function handleOpenEdit(emp: Profile) {
     setEditEmployee(emp);
     setEditName(emp.name);
     setEditEmail(emp.email);
+    setEditPhone(emp.phone || '');
     setEditRole(emp.role);
     setEditLocationId(emp.location_id || '');
     setEditPassword('');
@@ -108,14 +188,19 @@ export default function AdminEmployeesPage() {
     setCopiedWa(false);
   }
 
+  function handleOpenShareWaModal(emp: Profile) {
+    setShareWaTarget(emp);
+    setSharePassword('');
+    setCopiedWa(false);
+  }
+
   function generateRandomPassword() {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     let code = '';
     for (let i = 0; i < 4; i++) {
       code += chars.charAt(Math.floor(Math.random() * chars.length));
     }
-    setEditPassword(`Rimasa@${code}`);
-    setEnablePasswordChange(true);
+    return `Rimasa@${code}`;
   }
 
   async function handleSaveEdit(e: React.FormEvent) {
@@ -137,6 +222,7 @@ export default function AdminEmployeesPage() {
         body: JSON.stringify({
           name: editName,
           email: editEmail,
+          phone: editPhone,
           role: editRole,
           location_id: editRole === 'employee' ? editLocationId : null,
           newPassword: enablePasswordChange && editPassword.trim().length >= 6 ? editPassword.trim() : undefined,
@@ -163,25 +249,8 @@ export default function AdminEmployeesPage() {
     setSavingEdit(false);
   }
 
-  function getWhatsAppMessage(empName: string, empEmail: string, pass: string, locId: string): string {
-    const loc = locations.find(l => l.id === locId)?.name || 'KHDTK Penugasan';
-    return (
-      `*INFORMASI AKUN & PASSWORD PRESENSI MYRIMASA*\n` +
-      `----------------------------------------\n` +
-      `Halo *${empName}*,\n` +
-      `Berikut pembaruan kredensial akun presensi Anda di sistem Myrimasa:\n\n` +
-      `🌐 *Website Presensi:* https://rimasa.my.id\n` +
-      `📧 *Email (Login):* ${empEmail}\n` +
-      `📍 *Lokasi KHDTK:* ${loc}\n` +
-      `🔑 *Password Baru:* ${pass}\n` +
-      `----------------------------------------\n` +
-      `Silakan buka https://rimasa.my.id melalui browser HP Anda dan lakukan login.`
-    );
-  }
-
-  function copyWaMessage() {
-    if (!editEmployee) return;
-    const msg = getWhatsAppMessage(editName, editEmail, editPassword, editLocationId);
+  function copyWaMessage(name: string, email: string, pass: string, locIdOrName: string) {
+    const msg = getWhatsAppCredentialMessage(name, email, pass, locIdOrName);
     navigator.clipboard.writeText(msg);
     setCopiedWa(true);
     setTimeout(() => setCopiedWa(false), 2500);
@@ -213,7 +282,7 @@ export default function AdminEmployeesPage() {
         <button
           id="btn-add-employee"
           className="btn btn-primary"
-          onClick={() => { setShowAddModal(true); setAddError(''); setAddSuccess(''); }}
+          onClick={handleOpenAddModal}
         >
           ➕ Tambah Karyawan Baru
         </button>
@@ -231,7 +300,8 @@ export default function AdminEmployeesPage() {
               <tr>
                 <th>Nama</th>
                 <th>Email / Login</th>
-                <th>Lokasi Penugasan</th>
+                <th>No. WhatsApp / HP</th>
+                <th>Lokasi KHDTK</th>
                 <th>Role</th>
                 <th>Status</th>
                 <th>Terdaftar</th>
@@ -256,6 +326,33 @@ export default function AdminEmployeesPage() {
                       </div>
                     </td>
                     <td className="muted" style={{ fontSize: '13px' }}>{e.email}</td>
+                    <td>
+                      {e.phone ? (
+                        <a
+                          href={`https://wa.me/${cleanPhoneForWa(e.phone)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title="Chat via WhatsApp"
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            padding: '3px 8px',
+                            borderRadius: '6px',
+                            background: '#dcfce7',
+                            color: '#166534',
+                            fontSize: '12px',
+                            fontWeight: '600',
+                            textDecoration: 'none',
+                          }}
+                        >
+                          <span>💬</span>
+                          <span>{e.phone}</span>
+                        </a>
+                      ) : (
+                        <span className="muted" style={{ fontSize: '12px' }}>—</span>
+                      )}
+                    </td>
                     <td>
                       {e.location_name ? (
                         <span style={{
@@ -291,7 +388,29 @@ export default function AdminEmployeesPage() {
                     </td>
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px' }}>
-                        {/* Edit Button — includes password change & reset */}
+                        {/* Universal Share WA Button for ANY Account */}
+                        <button
+                          className="btn btn-sm"
+                          style={{
+                            background: '#22c55e',
+                            color: '#ffffff',
+                            padding: '5px 10px',
+                            fontSize: '12px',
+                            fontWeight: '700',
+                            borderRadius: '8px',
+                            border: 'none',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                          }}
+                          onClick={() => handleOpenShareWaModal(e)}
+                          title="Bagikan data akun login ini ke WhatsApp petugas"
+                        >
+                          <span>📲</span>
+                          <span>Kirim WA</span>
+                        </button>
+
+                        {/* Edit Button */}
                         <button
                           className="btn btn-ghost btn-sm"
                           style={{
@@ -304,17 +423,19 @@ export default function AdminEmployeesPage() {
                             borderRadius: '8px',
                           }}
                           onClick={() => handleOpenEdit(e)}
-                          title="Edit data karyawan & ganti/reset password"
+                          title="Edit data karyawan, nomor WA, lokasi KHDTK & ganti/reset password"
                         >
                           ✏️ Edit
                         </button>
+
+                        {/* Delete Button */}
                         <button
                           className="btn btn-ghost btn-sm"
                           style={{ color: '#dc2626', padding: '5px 8px', fontSize: '12px' }}
                           onClick={() => handleDelete(e.id, e.name)}
                           title="Hapus Akun"
                         >
-                          🗑️ Hapus
+                          🗑️
                         </button>
                       </div>
                     </td>
@@ -322,7 +443,7 @@ export default function AdminEmployeesPage() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={7} className="text-center muted" style={{ padding: '40px' }}>
+                  <td colSpan={8} className="text-center muted" style={{ padding: '40px' }}>
                     Belum ada karyawan terdaftar. Klik tombol <strong>"Tambah Karyawan Baru"</strong> di atas.
                   </td>
                 </tr>
@@ -332,10 +453,147 @@ export default function AdminEmployeesPage() {
         </div>
       )}
 
+      {/* Modal Universal Share Kredensial ke WhatsApp (Untuk Akun Existing Apapun) */}
+      {shareWaTarget && (
+        <div className="modal-overlay centered" style={{ zIndex: 9999 }}>
+          <div className="modal centered-modal" style={{ maxWidth: '500px', width: '92%' }}>
+            <div className="flex justify-between items-center mb-16">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{
+                  width: '36px', height: '36px', borderRadius: '10px',
+                  background: '#dcfce7', color: '#166534',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px',
+                }}>
+                  📲
+                </div>
+                <div>
+                  <h2 className="modal-title" style={{ fontSize: '17px' }}>Bagikan Akun ke WhatsApp</h2>
+                  <p className="modal-subtitle" style={{ fontSize: '12px' }}>
+                    {shareWaTarget.name} ({shareWaTarget.phone || 'Nomor HP belum ada'})
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                onClick={() => setShareWaTarget(null)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{
+              background: '#f8fafc',
+              border: '1px solid #cbd5e1',
+              borderRadius: '10px',
+              padding: '12px 14px',
+              marginBottom: '14px',
+              fontSize: '12.5px',
+              lineHeight: '1.6',
+            }}>
+              <div><strong>Nama Petugas:</strong> {shareWaTarget.name}</div>
+              <div><strong>Email Login:</strong> {shareWaTarget.email}</div>
+              <div><strong>No. WhatsApp:</strong> {shareWaTarget.phone || '—'}</div>
+              <div><strong>Lokasi KHDTK:</strong> {shareWaTarget.location_name || 'KHDTK Penugasan'}</div>
+            </div>
+
+            <div className="form-group" style={{ marginBottom: '16px' }}>
+              <label className="form-label" style={{ fontSize: '12px', fontWeight: '700' }}>
+                Masukkan Password Akun:
+              </label>
+              <input
+                type="text"
+                className="form-input"
+                value={sharePassword}
+                onChange={e => setSharePassword(e.target.value)}
+                placeholder="Ketik password milik akun ini (contoh: rimasa123 / khdtk2026)"
+                style={{ fontFamily: 'monospace', fontWeight: '700' }}
+              />
+              <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  style={{ fontSize: '11px', background: '#f1f5f9', border: '1px solid #cbd5e1' }}
+                  onClick={() => setSharePassword('khdtk2026')}
+                >
+                  Gunakan "khdtk2026"
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  style={{ fontSize: '11px', background: '#f1f5f9', border: '1px solid #cbd5e1' }}
+                  onClick={() => setSharePassword(generateRandomPassword())}
+                >
+                  🎲 Password Acak
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  style={{ fontSize: '11px', background: '#f1f5f9', border: '1px solid #cbd5e1' }}
+                  onClick={() => setSharePassword('')}
+                >
+                  Kosongkan
+                </button>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <a
+                href={getWhatsAppShareUrl(
+                  shareWaTarget.name,
+                  shareWaTarget.email,
+                  sharePassword,
+                  shareWaTarget.location_name || '',
+                  shareWaTarget.phone || ''
+                )}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-primary"
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  borderRadius: '10px',
+                  background: '#16a34a',
+                  textAlign: 'center',
+                  textDecoration: 'none',
+                  fontWeight: '800',
+                  fontSize: '13.5px',
+                }}
+              >
+                📲 Buka Chat WhatsApp Langsung
+              </a>
+
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => copyWaMessage(
+                  shareWaTarget.name,
+                  shareWaTarget.email,
+                  sharePassword,
+                  shareWaTarget.location_name || ''
+                )}
+                style={{ width: '100%', padding: '10px', borderRadius: '10px' }}
+              >
+                {copiedWa ? '✅ Pesan Format WA Disalin!' : '📋 Salin Format Pesan WA'}
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={() => setShareWaTarget(null)}
+                style={{ width: '100%', padding: '8px' }}
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal Tambah Karyawan */}
       {showAddModal && (
         <div className="modal-overlay centered" style={{ zIndex: 9999 }}>
-          <div className="modal centered-modal" style={{ maxWidth: '460px', width: '92%' }}>
+          <div className="modal centered-modal" style={{ maxWidth: '480px', width: '92%' }}>
             <div className="flex justify-between items-center mb-16">
               <h2 className="modal-title">➕ Tambah Akun Baru</h2>
               <button
@@ -347,108 +605,217 @@ export default function AdminEmployeesPage() {
               </button>
             </div>
 
-            <p className="modal-subtitle">
-              Akun akan langsung aktif dan terhubung ke domain <strong>rimasa.my.id</strong>.
-            </p>
-
-            {addError && (
-              <div className="alert alert-error mb-16">
-                <span>⚠️</span>
-                <span style={{ fontSize: '13px' }}>{addError}</span>
-              </div>
-            )}
-
-            {addSuccess && (
-              <div className="alert alert-success mb-16">
-                <span>✅</span>
-                <span style={{ fontSize: '13px' }}>{addSuccess}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleAddEmployee}>
-              <div className="form-group">
-                <label className="form-label">Nama Lengkap</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder="Contoh: Zulpan"
-                  value={addName}
-                  onChange={e => setAddName(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Email (Username Login)</label>
-                <input
-                  type="email"
-                  className="form-input"
-                  placeholder="petugas@gmail.com"
-                  value={addEmail}
-                  onChange={e => setAddEmail(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Password Awal</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder="Minimal 6 karakter (contoh: khdtk2026)"
-                  value={addPassword}
-                  onChange={e => setAddPassword(e.target.value)}
-                  required
-                  minLength={6}
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Role Pengguna</label>
-                <select
-                  className="form-select"
-                  value={addRole}
-                  onChange={e => setAddRole(e.target.value as 'employee' | 'admin')}
-                >
-                  <option value="employee">👤 Karyawan / Staff Lapangan</option>
-                  <option value="admin">🛡️ Administrator</option>
-                </select>
-              </div>
-
-              {addRole === 'employee' && (
-                <div className="form-group">
-                  <label className="form-label">Lokasi KHDTK Penugasan</label>
-                  <select
-                    className="form-select"
-                    value={addLocationId}
-                    onChange={e => setAddLocationId(e.target.value)}
-                    required
-                  >
-                    <option value="">-- Pilih Lokasi KHDTK --</option>
-                    {locations.map(loc => (
-                      <option key={loc.id} value={loc.id}>📍 {loc.name}</option>
-                    ))}
-                  </select>
+            {createdResult ? (
+              <div>
+                <div className="alert alert-success mb-16" style={{ fontSize: '13px' }}>
+                  <span>✅</span>
+                  <div>
+                    <strong>Akun Petugas Berhasil Dibuat!</strong>
+                    <div style={{ marginTop: '4px', fontSize: '12px' }}>
+                      Silakan kirimkan kredensial login berikut ke petugas via WhatsApp:
+                    </div>
+                  </div>
                 </div>
-              )}
 
-              <div className="flex gap-12 mt-20">
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-full"
-                  onClick={() => setShowAddModal(false)}
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  className="btn btn-primary btn-full"
-                  disabled={adding}
-                >
-                  {adding ? <><span className="spinner" /> Menyimpan...</> : 'Simpan Akun'}
-                </button>
+                <div style={{
+                  background: '#f8fafc',
+                  border: '1px solid #cbd5e1',
+                  borderRadius: '10px',
+                  padding: '14px',
+                  marginBottom: '16px',
+                  fontSize: '12.5px',
+                  lineHeight: '1.6',
+                }}>
+                  <div><strong>Nama:</strong> {createdResult.name}</div>
+                  <div><strong>Email Login:</strong> {createdResult.email}</div>
+                  <div><strong>No. HP / WA:</strong> {createdResult.phone || '—'}</div>
+                  <div><strong>Lokasi KHDTK:</strong> {locations.find(l => l.id === createdResult.locationId)?.name || '—'}</div>
+                  <div style={{ marginTop: '6px' }}>
+                    <strong>Password:</strong>{' '}
+                    <span style={{
+                      fontFamily: 'monospace',
+                      fontWeight: '800',
+                      color: '#166534',
+                      background: '#dcfce7',
+                      padding: '2px 8px',
+                      borderRadius: '4px',
+                    }}>
+                      {createdResult.password}
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <a
+                    href={getWhatsAppShareUrl(
+                      createdResult.name,
+                      createdResult.email,
+                      createdResult.password,
+                      createdResult.locationId,
+                      createdResult.phone
+                    )}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-primary"
+                    style={{
+                      width: '100%',
+                      padding: '12px',
+                      borderRadius: '10px',
+                      background: '#16a34a',
+                      textAlign: 'center',
+                      textDecoration: 'none',
+                      fontWeight: '800',
+                    }}
+                  >
+                    📲 Kirim Kredensial ke WhatsApp
+                  </a>
+
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => copyWaMessage(
+                      createdResult.name,
+                      createdResult.email,
+                      createdResult.password,
+                      createdResult.locationId
+                    )}
+                    style={{ width: '100%', padding: '10px', borderRadius: '10px' }}
+                  >
+                    {copiedWa ? '✅ Pesan WA Disalin!' : '📋 Salin Format Pesan WA'}
+                  </button>
+
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    onClick={() => setShowAddModal(false)}
+                    style={{ width: '100%', padding: '8px' }}
+                  >
+                    Selesai &amp; Tutup
+                  </button>
+                </div>
               </div>
-            </form>
+            ) : (
+              <>
+                <p className="modal-subtitle">
+                  Akun akan langsung aktif dan terhubung ke domain <strong>rimasa.my.id</strong>.
+                </p>
+
+                {addError && (
+                  <div className="alert alert-error mb-16">
+                    <span>⚠️</span>
+                    <span style={{ fontSize: '13px' }}>{addError}</span>
+                  </div>
+                )}
+
+                <form onSubmit={handleAddEmployee}>
+                  <div className="form-group" style={{ marginBottom: '12px' }}>
+                    <label className="form-label" style={{ fontSize: '12px', fontWeight: '700' }}>
+                      Nama Lengkap <span style={{ color: '#dc2626' }}>*</span>
+                    </label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="Contoh: Sigit Prasetyo"
+                      value={addName}
+                      onChange={e => setAddName(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group" style={{ marginBottom: '12px' }}>
+                    <label className="form-label" style={{ fontSize: '12px', fontWeight: '700' }}>
+                      Email (Username Login) <span style={{ color: '#dc2626' }}>*</span>
+                    </label>
+                    <input
+                      type="email"
+                      className="form-input"
+                      placeholder="petugas@gmail.com"
+                      value={addEmail}
+                      onChange={e => setAddEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group" style={{ marginBottom: '12px' }}>
+                    <label className="form-label" style={{ fontSize: '12px', fontWeight: '700' }}>
+                      No. WhatsApp / HP
+                    </label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="Contoh: 0895-6359-4897"
+                      value={addPhone}
+                      onChange={e => setAddPhone(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="form-group" style={{ marginBottom: '12px' }}>
+                    <label className="form-label" style={{ fontSize: '12px', fontWeight: '700' }}>
+                      Password Awal <span style={{ color: '#dc2626' }}>*</span>
+                    </label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="Minimal 6 karakter"
+                      value={addPassword}
+                      onChange={e => setAddPassword(e.target.value)}
+                      required
+                      minLength={6}
+                    />
+                  </div>
+
+                  <div className="form-group" style={{ marginBottom: '12px' }}>
+                    <label className="form-label" style={{ fontSize: '12px', fontWeight: '700' }}>
+                      Role Pengguna
+                    </label>
+                    <select
+                      className="form-select"
+                      value={addRole}
+                      onChange={e => setAddRole(e.target.value as 'employee' | 'admin')}
+                    >
+                      <option value="employee">👤 Karyawan / Staff Lapangan</option>
+                      <option value="admin">🛡️ Administrator</option>
+                    </select>
+                  </div>
+
+                  {addRole === 'employee' && (
+                    <div className="form-group" style={{ marginBottom: '16px' }}>
+                      <label className="form-label" style={{ fontSize: '12px', fontWeight: '700' }}>
+                        Lokasi KHDTK Penugasan <span style={{ color: '#dc2626' }}>*</span>
+                      </label>
+                      <select
+                        className="form-select"
+                        value={addLocationId}
+                        onChange={e => setAddLocationId(e.target.value)}
+                        required
+                      >
+                        <option value="">-- Pilih Lokasi KHDTK --</option>
+                        {locations.map(loc => (
+                          <option key={loc.id} value={loc.id}>📍 {loc.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  <div className="flex gap-12 mt-20">
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-full"
+                      onClick={() => setShowAddModal(false)}
+                    >
+                      Batal
+                    </button>
+                    <button
+                      type="submit"
+                      className="btn btn-primary btn-full"
+                      disabled={adding}
+                    >
+                      {adding ? <><span className="spinner" /> Menyimpan...</> : 'Simpan Akun'}
+                    </button>
+                  </div>
+                </form>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -456,7 +823,7 @@ export default function AdminEmployeesPage() {
       {/* Modal Edit Karyawan & Reset/Kirim Password */}
       {editEmployee && (
         <div className="modal-overlay centered" style={{ zIndex: 9999 }}>
-          <div className="modal centered-modal" style={{ maxWidth: '480px', width: '92%' }}>
+          <div className="modal centered-modal" style={{ maxWidth: '500px', width: '92%' }}>
             <div className="flex justify-between items-center mb-16">
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <div style={{
@@ -494,7 +861,7 @@ export default function AdminEmployeesPage() {
                 <div className="alert alert-success mb-16" style={{ fontSize: '13px' }}>
                   <span>✅</span>
                   <div>
-                    <strong>Data dan Password berhasil diperbarui!</strong>
+                    <strong>Password Berhasil Di-Reset!</strong>
                     <div style={{ marginTop: '2px', fontSize: '12px' }}>
                       Password baru untuk <strong>{editName}</strong>:
                     </div>
@@ -515,27 +882,40 @@ export default function AdminEmployeesPage() {
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <button
-                    type="button"
+                  <a
+                    href={getWhatsAppShareUrl(editName, editEmail, editPassword, editLocationId, editPhone)}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="btn btn-primary"
-                    onClick={copyWaMessage}
                     style={{
                       width: '100%',
                       padding: '12px',
                       borderRadius: '10px',
-                      background: copiedWa ? '#16a34a' : '#1e5631',
+                      background: '#16a34a',
+                      textAlign: 'center',
+                      textDecoration: 'none',
+                      fontWeight: '800',
                     }}
                   >
-                    <span>{copiedWa ? '✅ Pesan WA Disalin!' : '📋 Salin Pesan Format WhatsApp'}</span>
-                  </button>
+                    📲 Kirim Password Baru ke WhatsApp
+                  </a>
 
                   <button
                     type="button"
                     className="btn btn-secondary"
-                    onClick={() => setEditEmployee(null)}
+                    onClick={() => copyWaMessage(editName, editEmail, editPassword, editLocationId)}
                     style={{ width: '100%', padding: '10px', borderRadius: '10px' }}
                   >
-                    Selesai & Tutup
+                    {copiedWa ? '✅ Pesan WA Disalin!' : '📋 Salin Format Pesan WA'}
+                  </button>
+
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    onClick={() => setEditEmployee(null)}
+                    style={{ width: '100%', padding: '8px' }}
+                  >
+                    Selesai &amp; Tutup
                   </button>
                 </div>
               </div>
@@ -543,7 +923,7 @@ export default function AdminEmployeesPage() {
               <form onSubmit={handleSaveEdit}>
                 <div className="form-group" style={{ marginBottom: '12px' }}>
                   <label className="form-label" style={{ fontSize: '12px', fontWeight: '700' }}>
-                    Nama Lengkap
+                    Nama Lengkap <span style={{ color: '#dc2626' }}>*</span>
                   </label>
                   <input
                     type="text"
@@ -556,7 +936,7 @@ export default function AdminEmployeesPage() {
 
                 <div className="form-group" style={{ marginBottom: '12px' }}>
                   <label className="form-label" style={{ fontSize: '12px', fontWeight: '700' }}>
-                    Email (Login)
+                    Email (Login) <span style={{ color: '#dc2626' }}>*</span>
                   </label>
                   <input
                     type="email"
@@ -564,6 +944,19 @@ export default function AdminEmployeesPage() {
                     value={editEmail}
                     onChange={e => setEditEmail(e.target.value)}
                     required
+                  />
+                </div>
+
+                <div className="form-group" style={{ marginBottom: '12px' }}>
+                  <label className="form-label" style={{ fontSize: '12px', fontWeight: '700' }}>
+                    No. WhatsApp / HP
+                  </label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="Contoh: 0895-6359-4897"
+                    value={editPhone}
+                    onChange={e => setEditPhone(e.target.value)}
                   />
                 </div>
 
@@ -584,7 +977,7 @@ export default function AdminEmployeesPage() {
                 {editRole === 'employee' && (
                   <div className="form-group" style={{ marginBottom: '14px' }}>
                     <label className="form-label" style={{ fontSize: '12px', fontWeight: '700' }}>
-                      Lokasi KHDTK Penugasan
+                      Lokasi KHDTK Penugasan <span style={{ color: '#dc2626' }}>*</span>
                     </label>
                     <select
                       className="form-select"
@@ -619,12 +1012,11 @@ export default function AdminEmployeesPage() {
                         onChange={e => {
                           setEnablePasswordChange(e.target.checked);
                           if (e.target.checked && !editPassword) {
-                            const rand = Math.floor(1000 + Math.random() * 9000);
-                            setEditPassword(`Rimasa#${rand}`);
+                            setEditPassword('');
                           }
                         }}
                       />
-                      <span>🔑 Reset / Ganti Password Staff</span>
+                      <span>🔑 Reset / Ubah Kata Sandi Akun Ini</span>
                     </label>
                   </div>
 
@@ -635,7 +1027,7 @@ export default function AdminEmployeesPage() {
                           type={showEditPassword ? 'text' : 'password'}
                           className="form-input"
                           style={{ paddingRight: '42px', fontSize: '13px', fontFamily: 'monospace' }}
-                          placeholder="Masukkan password baru (min. 6 karakter)"
+                          placeholder="Ketik password baru yang diinginkan (min. 6 karakter)"
                           value={editPassword}
                           onChange={e => setEditPassword(e.target.value)}
                           required={enablePasswordChange}
@@ -660,18 +1052,13 @@ export default function AdminEmployeesPage() {
                           type="button"
                           className="btn btn-ghost btn-sm"
                           style={{ fontSize: '11px', background: '#f1f5f9', border: '1px solid #cbd5e1' }}
-                          onClick={generateRandomPassword}
+                          onClick={() => setEditPassword(generateRandomPassword())}
                         >
                           🎲 Buat Acak
                         </button>
-                        <button
-                          type="button"
-                          className="btn btn-ghost btn-sm"
-                          style={{ fontSize: '11px', background: '#f1f5f9', border: '1px solid #cbd5e1' }}
-                          onClick={() => setEditPassword('khdtk2026')}
-                        >
-                          🔑 Default "khdtk2026"
-                        </button>
+                      </div>
+                      <div className="form-hint" style={{ marginTop: '6px' }}>
+                        Setelah disimpan, kredensial password baru ini dapat langsung dikirim ke WhatsApp petugas.
                       </div>
                     </div>
                   )}

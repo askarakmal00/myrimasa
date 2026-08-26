@@ -318,7 +318,7 @@ export default async function PanduanPage() {
               C. Lupa Password?
             </h3>
             <p>
-              Jika Anda lupa kata sandi akun, hubungi Administrator KHDTK. Administrator dapat langsung mereset kata sandi Anda dan membagikan password baru melalui WhatsApp.
+              Jika Anda lupa kata sandi akun, hubungi Administrator Rimasa. Administrator dapat langsung mereset kata sandi Anda dan membagikan password baru melalui WhatsApp.
             </p>
           </div>
         </section>
@@ -453,9 +453,9 @@ export default async function PanduanPage() {
           <div style={{ fontSize: '14px', color: '#475569', lineHeight: 1.7 }}>
             <p>Akun Administrator memiliki hak akses ke panel kontrol:</p>
             <ul style={{ paddingLeft: '20px', margin: '8px 0' }}>
-              <li><strong>Dashboard Real-time:</strong> Memantau kehadiran harian seluruh personil (siapa yang sudah hadir vs belum) pada 3 sesi.</li>
-              <li><strong>Manajemen Karyawan:</strong> Tambah personil baru, atur penugasan lokasi, dan <strong>Ganti / Reset Password Staff</strong> secara instan.</li>
-              <li><strong>🎫 Lembar Akun Staff:</strong> Cetak slip akun, bagikan informasi kredensial login via WhatsApp sekali klik, dan salin ringkasan akun.</li>
+              <li><strong>Dashboard Real-time:</strong> Memantau kehadiran harian seluruh personil (siapa yang sudah hadir vs belum) pada 3 sesi harian (Pagi 06.00-07.45, Siang 13.00-14.00, Sore 16.00-23.59 WIB).</li>
+              <li><strong>Manajemen Karyawan:</strong> Tambah personil baru, ubah penugasan lokasi, serta <strong>Ganti / Reset Password Staff langsung pada menu Edit Karyawan</strong>.</li>
+              <li><strong>🎫 Lembar Akun Staff:</strong> Cetak slip akun resmi, bagikan kredensial login via WhatsApp sekali klik, dan salin ringkasan akun personil.</li>
               <li><strong>Export CSV:</strong> Unduh seluruh data laporan presensi ke file CSV dengan format standar Google Forms lengkap dengan link Google Drive dan koordinat peta.</li>
             </ul>
           </div>

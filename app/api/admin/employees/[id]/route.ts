@@ -15,7 +15,7 @@ export async function PUT(
     if (profile.role !== 'admin') return NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
 
     const body = await request.json();
-    const { name, email, role, location_id, newPassword } = body;
+    const { name, email, role, location_id, newPassword, phone } = body;
 
     if (!name || !email) {
       return NextResponse.json({ error: 'Nama dan email wajib diisi' }, { status: 400 });
@@ -37,6 +37,7 @@ export async function PUT(
       user_metadata: {
         name: name.trim(),
         role: assignedRole,
+        phone: phone ? phone.trim() : null,
         location_id: location_id || null,
         location_name: locationName,
       },
@@ -59,6 +60,7 @@ export async function PUT(
       name: name.trim(),
       email: email.trim().toLowerCase(),
       role: assignedRole,
+      phone: phone ? phone.trim() : null,
       location_id: location_id || null,
       location_name: locationName,
     };

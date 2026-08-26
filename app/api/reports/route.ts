@@ -42,6 +42,18 @@ export async function POST(request: Request) {
     if (!session_type || !['morning', 'afternoon', 'evening'].includes(session_type)) {
       return NextResponse.json({ error: 'Session type tidak valid (harus morning, afternoon, atau evening)' }, { status: 400 });
     }
+    if (!routine_activity || !routine_activity.trim()) {
+      return NextResponse.json({ error: 'Kolom Kegiatan Rutin wajib diisi' }, { status: 400 });
+    }
+    if (!incident_activity || !incident_activity.trim()) {
+      return NextResponse.json({ error: 'Kolom Kegiatan Insidentil wajib diisi (tulis "Nihil" jika tidak ada)' }, { status: 400 });
+    }
+    if (!field_condition || !field_condition.trim()) {
+      return NextResponse.json({ error: 'Kolom Hasil Kondisi di lapangan wajib diisi' }, { status: 400 });
+    }
+    if (!follow_up || !follow_up.trim()) {
+      return NextResponse.json({ error: 'Kolom Tindak Lanjut/Usulan wajib diisi' }, { status: 400 });
+    }
     if (!latitude || !longitude) {
       return NextResponse.json({ error: 'Data GPS wajib ada' }, { status: 400 });
     }

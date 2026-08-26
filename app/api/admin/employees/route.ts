@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getProfile } from '@/lib/auth';
 import { createAdminClient } from '@/lib/supabase';
-import { getAssignedLocationName } from '@/lib/staff-assignments';
+import { getAssignedLocationName, STAFF_ASSIGNMENTS } from '@/lib/staff-assignments';
 
 // GET /api/admin/employees — List all employees (admin only)
 export async function GET() {
@@ -12,7 +12,7 @@ export async function GET() {
 
     const adminClient = createAdminClient();
 
-    // Fetch auth users to get user_metadata with location_name
+    // Fetch auth users to get user_metadata with location_name & phone
     const { data: authUsers } = await adminClient.auth.admin.listUsers();
     const authMap = new Map();
     (authUsers?.users || []).forEach(u => {
@@ -29,8 +29,15 @@ export async function GET() {
     const enrichedProfiles = (data || []).map((p: any) => {
       const meta = authMap.get(p.id) || {};
       const assignedLocName = getAssignedLocationName(p.email, p.name);
+      const assignedStaff = STAFF_ASSIGNMENTS.find(s =>
+        s.email.toLowerCase() === (p.email || '').toLowerCase() ||
+        s.name.toLowerCase() === (p.name || '').toLowerCase()
+      );
+      const phone = p.phone || meta.phone || assignedStaff?.phone || null;
+
       return {
         ...p,
+        phone,
         location_id: p.location_id || meta.location_id || null,
         location_name: p.location_name || meta.location_name || assignedLocName || null,
       };
@@ -50,7 +57,7 @@ export async function POST(request: Request) {
     if (profile.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const body = await request.json();
-    const { name, email, password, role, location_id } = body;
+    const { name, email, password, role, location_id, phone } = body;
 
     if (!name || !email || !password) {
       return NextResponse.json({ error: 'Nama, email, dan password wajib diisi' }, { status: 400 });
@@ -78,6 +85,7 @@ export async function POST(request: Request) {
       user_metadata: {
         name: name.trim(),
         role: assignedRole,
+        phone: phone ? phone.trim() : null,
         location_id: location_id || null,
         location_name: locationName,
       },
@@ -102,6 +110,7 @@ export async function POST(request: Request) {
       name: name.trim(),
       role: assignedRole,
       status: 'active',
+      phone: phone ? phone.trim() : null,
     };
 
     if (location_id) {
@@ -114,7 +123,7 @@ export async function POST(request: Request) {
     try {
       await adminClient.from('profiles').upsert(profileInsertData);
     } catch {
-      // Fallback if columns not yet synced in table
+      // Fallback if custom columns not yet in table
       await adminClient.from('profiles').upsert({
         id: newUserId,
         email: email.trim().toLowerCase(),

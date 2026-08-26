@@ -9,6 +9,7 @@ export interface Profile {
   id: string;
   email: string;
   name: string;
+  phone?: string | null;
   role: Role;
   status: UserStatus;
   location_id?: string | null;
