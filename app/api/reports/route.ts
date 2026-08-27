@@ -10,6 +10,7 @@ const sessionLabels: Record<SessionType, string> = {
   morning: 'Pagi',
   afternoon: 'Siang',
   evening: 'Sore',
+  special: 'Kejadian Khusus',
 };
 
 // POST /api/reports — Submit a new presence report
@@ -39,8 +40,8 @@ export async function POST(request: Request) {
     const files = formData.getAll('files') as File[];
 
     // Validate required fields
-    if (!session_type || !['morning', 'afternoon', 'evening'].includes(session_type)) {
-      return NextResponse.json({ error: 'Session type tidak valid (harus morning, afternoon, atau evening)' }, { status: 400 });
+    if (!session_type || !['morning', 'afternoon', 'evening', 'special'].includes(session_type)) {
+      return NextResponse.json({ error: 'Session type tidak valid (harus morning, afternoon, evening, atau special)' }, { status: 400 });
     }
     if (!routine_activity || !routine_activity.trim()) {
       return NextResponse.json({ error: 'Kolom Kegiatan Rutin wajib diisi' }, { status: 400 });
@@ -72,23 +73,25 @@ export async function POST(request: Request) {
       );
     }
 
-    // === DUPLICATE CHECK ===
+    // === DUPLICATE CHECK (Only for fixed routine sessions: morning, afternoon, evening) ===
     const adminClient = createAdminClient();
     const reportDate = getTodayLocalDate(timezoneOffset);
 
-    const { data: existing } = await adminClient
-      .from('reports')
-      .select('id')
-      .eq('user_id', profile.id)
-      .eq('session_type', session_type)
-      .eq('report_date', reportDate)
-      .single();
+    if (session_type !== 'special') {
+      const { data: existing } = await adminClient
+        .from('reports')
+        .select('id')
+        .eq('user_id', profile.id)
+        .eq('session_type', session_type)
+        .eq('report_date', reportDate)
+        .single();
 
-    if (existing) {
-      return NextResponse.json(
-        { error: `Anda sudah melakukan presensi ${sessionName} hari ini.` },
-        { status: 409 }
-      );
+      if (existing) {
+        return NextResponse.json(
+          { error: `Anda sudah melakukan presensi ${sessionName} hari ini.` },
+          { status: 409 }
+        );
+      }
     }
 
     // === RESOLVE LOCATION INFO ===

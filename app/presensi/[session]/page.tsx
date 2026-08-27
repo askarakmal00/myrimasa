@@ -14,6 +14,7 @@ const sessionTitles: Record<string, string> = {
   morning: 'Pagi',
   afternoon: 'Siang',
   evening: 'Sore',
+  special: 'Kejadian Khusus',
 };
 
 export async function generateMetadata({
@@ -34,7 +35,12 @@ export default async function PresensiPage({
   const { session: sessionParam } = await params;
 
   // Validate session param
-  if (sessionParam !== 'morning' && sessionParam !== 'afternoon' && sessionParam !== 'evening') {
+  if (
+    sessionParam !== 'morning' &&
+    sessionParam !== 'afternoon' &&
+    sessionParam !== 'evening' &&
+    sessionParam !== 'special'
+  ) {
     redirect('/');
   }
   const session = sessionParam as SessionType;
@@ -51,8 +57,8 @@ export default async function PresensiPage({
   const status = getPresenceStatus(session, serverNow, todayReport);
   const win = PRESENCE_WINDOWS[session];
 
-  // If already submitted, redirect to home
-  if (status === 'done') {
+  // If already submitted routine session, redirect to home
+  if (session !== 'special' && status === 'done') {
     redirect('/');
   }
 

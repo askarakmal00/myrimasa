@@ -70,6 +70,9 @@ export default function AdminReportsPage() {
     if (session === 'afternoon') {
       return <span className="badge" style={{ background: '#fef3c7', color: '#b45309' }}>🌤️ Siang</span>;
     }
+    if (session === 'special') {
+      return <span className="badge" style={{ background: '#ffe4e6', color: '#be123c', border: '1px solid #fecdd3' }}>⚠️ Khusus</span>;
+    }
     return <span className="badge badge-evening">🌙 Sore</span>;
   }
 
@@ -122,13 +125,13 @@ export default function AdminReportsPage() {
               onChange={e => setEmployeeId(e.target.value)}
             >
               <option value="">Semua Karyawan</option>
-              {employees.map(e => (
-                <option key={e.id} value={e.id}>{e.name}</option>
+              {employees.map(emp => (
+                <option key={emp.id} value={emp.id}>{emp.name}</option>
               ))}
             </select>
           </div>
           <div className="filter-group">
-            <label className="filter-label" htmlFor="filter-location">Lokasi</label>
+            <label className="filter-label" htmlFor="filter-location">Lokasi KHDTK</label>
             <select
               id="filter-location"
               className="form-select"
@@ -153,6 +156,7 @@ export default function AdminReportsPage() {
               <option value="morning">☀️ Pagi (06.00 - 08.00)</option>
               <option value="afternoon">🌤️ Siang (13.00 - 14.00)</option>
               <option value="evening">🌙 Sore (16.00 - 23.59)</option>
+              <option value="special">⚠️ Kejadian Khusus (24 Jam)</option>
             </select>
           </div>
           <div className="filter-actions">

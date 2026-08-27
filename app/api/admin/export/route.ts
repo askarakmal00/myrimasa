@@ -42,6 +42,7 @@ export async function GET(request: Request) {
       morning: 'Pagi (06.00-08.00)',
       afternoon: 'Siang (13.00-14.00)',
       evening: 'Sore (16.00-23.59)',
+      special: 'Kejadian Khusus (24 Jam)',
     };
 
     // Transform to CSV format (like Google Forms Response)

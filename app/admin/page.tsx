@@ -106,6 +106,7 @@ export default async function AdminDashboardPage() {
   function getBadge(session: string) {
     if (session === 'morning') return <span className="badge badge-morning">☀️ Pagi</span>;
     if (session === 'afternoon') return <span className="badge" style={{ background: '#fef3c7', color: '#b45309' }}>🌤️ Siang</span>;
+    if (session === 'special') return <span className="badge" style={{ background: '#ffe4e6', color: '#be123c', border: '1px solid #fecdd3' }}>⚠️ Khusus</span>;
     return <span className="badge badge-evening">🌙 Sore</span>;
   }
 

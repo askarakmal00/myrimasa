@@ -35,7 +35,10 @@ export default async function ReportDetailPage({
       return <span className="badge badge-morning">☀️ Presensi Pagi</span>;
     }
     if (session === 'afternoon') {
-      return <span className="badge" style={{ background: 'rgba(234, 179, 8, 0.15)', color: '#eab308' }}>🌤️ Presensi Siang</span>;
+      return <span className="badge" style={{ background: '#fef3c7', color: '#b45309' }}>🌤️ Presensi Siang</span>;
+    }
+    if (session === 'special') {
+      return <span className="badge" style={{ background: '#ffe4e6', color: '#be123c', border: '1px solid #fecdd3' }}>⚠️ Kejadian Khusus</span>;
     }
     return <span className="badge badge-evening">🌙 Presensi Sore</span>;
   }

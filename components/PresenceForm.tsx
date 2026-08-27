@@ -8,16 +8,19 @@ import Link from 'next/link';
 interface PresenceFormProps {
   session: SessionType;
   profile: Profile;
+  cameraOnly?: boolean;
 }
 
 const sessionConfig: Record<SessionType, { label: string; emoji: string }> = {
   morning: { label: 'Pagi', emoji: '☀️' },
   afternoon: { label: 'Siang', emoji: '🌤️' },
   evening: { label: 'Sore', emoji: '🌙' },
+  special: { label: 'Kejadian Khusus', emoji: '⚠️' },
 };
 
-export default function PresenceForm({ session, profile }: PresenceFormProps) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
+export default function PresenceForm({ session, profile, cameraOnly = false }: PresenceFormProps) {
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const standardInputRef = useRef<HTMLInputElement>(null);
 
   // Auto-assigned location name from table
   const assignedLoc = getAssignedLocationName(profile.email, profile.name);
@@ -481,34 +484,93 @@ export default function PresenceForm({ session, profile }: PresenceFormProps) {
             Maksimal 5 file. Format: JPG, PNG, MP4, MOV, dll.
           </div>
 
-          {/* Upload area */}
+          {/* Upload area: Camera-Only mode (for testing) vs Standard mode (for production) */}
           {files.length < 5 && (
-            <div
-              id="file-upload-area"
-              className="file-upload-area"
-              onClick={() => fileInputRef.current?.click()}
-              onDrop={handleDrop}
-              onDragOver={e => e.preventDefault()}
-              role="button"
-              tabIndex={0}
-              aria-label="Area upload foto atau video"
-              onKeyDown={e => e.key === 'Enter' && fileInputRef.current?.click()}
-            >
-              <div className="file-upload-icon">📁</div>
-              <div className="file-upload-text">
-                <strong>Ketuk untuk mengambil foto</strong> atau pilih dari galeri
-              </div>
-              <div className="file-upload-hint">{5 - files.length} slot tersisa</div>
+            <div>
+              {cameraOnly ? (
+                /* Camera-Only UI */
+                <div
+                  id="file-upload-area"
+                  className="file-upload-area"
+                  onClick={() => cameraInputRef.current?.click()}
+                  role="button"
+                  tabIndex={0}
+                  aria-label="Ambil foto langsung di lokasi dengan kamera"
+                  onKeyDown={e => e.key === 'Enter' && cameraInputRef.current?.click()}
+                  style={{
+                    padding: '24px 20px',
+                    borderRadius: '16px',
+                    border: '2px dashed #bbf7d0',
+                    background: '#f0fdf4',
+                    cursor: 'pointer',
+                    textAlign: 'center',
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  <div style={{ fontSize: '36px', marginBottom: '6px' }}>📸</div>
+                  <div style={{ fontSize: '15px', fontWeight: '800', color: '#166534', marginBottom: '4px' }}>
+                    Ambil Foto Langsung di Lokasi
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#15803d', marginBottom: '10px' }}>
+                    🔒 Mode Uji Coba: Wajib kamera langsung (galeri dinonaktifkan)
+                  </div>
+                  <div style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '8px 18px',
+                    borderRadius: '100px',
+                    background: '#166534',
+                    color: '#ffffff',
+                    fontSize: '13px',
+                    fontWeight: '700',
+                    boxShadow: '0 2px 8px rgba(22, 101, 52, 0.2)',
+                  }}>
+                    📷 Buka Kamera ({5 - files.length} slot tersisa)
+                  </div>
+                </div>
+              ) : (
+                /* Standard Normal Production UI (Camera + Gallery) */
+                <div
+                  id="file-upload-area"
+                  className="file-upload-area"
+                  onClick={() => standardInputRef.current?.click()}
+                  onDrop={handleDrop}
+                  onDragOver={e => e.preventDefault()}
+                  role="button"
+                  tabIndex={0}
+                  aria-label="Area upload foto atau video"
+                  onKeyDown={e => e.key === 'Enter' && standardInputRef.current?.click()}
+                >
+                  <div className="file-upload-icon">📁</div>
+                  <div className="file-upload-text">
+                    <strong>Ketuk untuk mengambil foto</strong> atau pilih dari galeri
+                  </div>
+                  <div className="file-upload-hint">{5 - files.length} slot tersisa</div>
+                </div>
+              )}
             </div>
           )}
 
+          {/* Camera-Only Input (Forces rear camera on mobile) */}
           <input
-            ref={fileInputRef}
+            ref={cameraInputRef}
+            id="input-camera"
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={handleFileChange}
+            style={{ display: 'none' }}
+            aria-label="Ambil foto langsung dari kamera"
+          />
+
+          {/* Standard Input (Allows Camera or Gallery on mobile) */}
+          <input
+            ref={standardInputRef}
             id="input-files"
             type="file"
             accept="image/*,video/*"
             multiple
-            capture="environment"
             onChange={handleFileChange}
             style={{ display: 'none' }}
             aria-label="Input file foto atau video"

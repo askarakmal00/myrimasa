@@ -28,6 +28,15 @@ export const PRESENCE_WINDOWS: Record<SessionType, PresenceWindow> = {
     endMinute: 59,
     timeLabel: '16.00 - 23.59',
   },
+  special: {
+    session: 'special',
+    label: 'Kejadian Khusus',
+    startHour: 0,
+    startMinute: 0,
+    endHour: 23,
+    endMinute: 59,
+    timeLabel: 'Bisa diinput kapan saja (24 Jam)',
+  },
 };
 
 /**
@@ -73,6 +82,10 @@ export function getPresenceStatus(
   todayReport: { id: string; timestamp: string } | null,
   timezoneOffsetMinutes?: number
 ): PresenceCardStatus {
+  if (session === 'special') {
+    return 'open';
+  }
+
   const local = getLocalDate(serverUtcDate, timezoneOffsetMinutes);
   const currentHour = local.getUTCHours();
   const currentMinute = local.getUTCMinutes();
@@ -98,6 +111,10 @@ export function isWithinWindow(
   serverUtcDate: Date,
   timezoneOffsetMinutes?: number
 ): boolean {
+  if (session === 'special') {
+    return true;
+  }
+
   const local = getLocalDate(serverUtcDate, timezoneOffsetMinutes);
   const currentHour = local.getUTCHours();
   const currentMinute = local.getUTCMinutes();
