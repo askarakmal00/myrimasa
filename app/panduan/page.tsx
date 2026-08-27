@@ -344,7 +344,7 @@ export default async function PanduanPage() {
               Sistem Myrimasa telah dilengkapi fitur <strong>Penugasan Lokasi KHDTK Otomatis</strong>:
             </p>
             <ul style={{ paddingLeft: '20px', margin: '8px 0' }}>
-              <li>Petugas <strong>tidak perlu memilih lokasi KHDTK secara manual</strong>. Lokasi tugas (misal: KHDTK Kaliurang, KHDTK Ngandong, KHDTK Sumberwringin, KHDTK Kepau Jaya, dll.) telah otomatis terikat pada akun Anda.</li>
+              <li>Petugas <strong>tidak perlu memilih lokasi KHDTK secara manual</strong>. Lokasi tugas (misal: KHDTK Kaliurang, KHDTK Sumberwringin, KHDTK Kepau Jaya, dll.) telah otomatis terikat pada akun Anda.</li>
               <li>Sistem akan otomatis merekam titik koordinat <strong>Latitude & Longitude GPS</strong> secara presisi saat form presensi dibuka.</li>
             </ul>
 
