@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Location, Profile, SessionType, GpsData } from '@/lib/types';
 import { getAssignedLocationName } from '@/lib/staff-assignments';
 import { compressFiles } from '@/lib/image-compression';
+import { formatWibDate, formatWibTime } from '@/lib/time';
 import Link from 'next/link';
 
 interface PresenceFormProps {
@@ -269,23 +270,182 @@ export default function PresenceForm({ session, profile, cameraOnly = false }: P
     }
   }
 
-  // ===== SUCCESS STATE =====
+  // ===== SUCCESS STATE (Modern Digital Receipt Card) =====
   if (submitSuccess) {
+    const formattedTime = submittedAt ? formatWibTime(submittedAt) : 'Baru saja';
+    const formattedDate = submittedAt ? formatWibDate(submittedAt) : formatWibDate(new Date().toISOString());
+
     return (
-      <div className="container" style={{ paddingTop: '40px' }}>
-        <div className="success-state fade-in">
-          <div className="success-icon">✅</div>
-          <div className="success-title">Presensi Berhasil!</div>
-          <div className="success-subtitle">
-            Laporan presensi {sessionLabel} Anda telah berhasil dikirim.
-            {submittedAt && (
-              <><br />Tercatat pada <strong>{new Date(submittedAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} waktu setempat</strong></>
-            )}
+      <div className="container" style={{ paddingTop: '24px', paddingBottom: '60px', maxWidth: '440px', margin: '0 auto' }}>
+        {/* Main Card */}
+        <div style={{
+          background: '#ffffff',
+          borderRadius: '24px',
+          padding: '32px 24px 28px',
+          border: '1px solid #e2e8f0',
+          boxShadow: '0 10px 30px -5px rgba(0, 0, 0, 0.07)',
+          textAlign: 'center',
+          animation: 'modalFadeIn 0.3s ease-out',
+        }}>
+          {/* Animated Success Checkmark Badge */}
+          <div style={{
+            width: '76px',
+            height: '76px',
+            margin: '0 auto 20px',
+            borderRadius: '50%',
+            background: 'linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)',
+            border: '3px solid #86efac',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 8px 20px -4px rgba(34, 197, 94, 0.35)',
+          }}>
+            <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#15803d" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
           </div>
-          <div style={{ marginTop: '32px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <Link href="/" id="btn-back-home-success" className="btn btn-primary btn-full">
+
+          <h2 style={{
+            fontSize: '22px',
+            fontWeight: '800',
+            color: '#0f172a',
+            marginBottom: '6px',
+            letterSpacing: '-0.3px',
+          }}>
+            Presensi Berhasil!
+          </h2>
+
+          <p style={{
+            fontSize: '13px',
+            color: '#64748b',
+            marginBottom: '24px',
+            lineHeight: 1.4,
+          }}>
+            Laporan presensi <strong>{sessionLabel}</strong> Anda telah berhasil diverifikasi dan tersimpan.
+          </p>
+
+          {/* Digital Receipt Box */}
+          <div style={{
+            background: '#f8fafc',
+            border: '1px solid #e2e8f0',
+            borderRadius: '16px',
+            padding: '18px 16px',
+            textAlign: 'left',
+            marginBottom: '24px',
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              paddingBottom: '12px',
+              marginBottom: '12px',
+              borderBottom: '1px dashed #cbd5e1',
+            }}>
+              <span style={{ fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                BUKTI PRESENSI DIGITAL
+              </span>
+              <span style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                fontSize: '11px',
+                fontWeight: '700',
+                color: '#166534',
+                background: '#dcfce7',
+                padding: '2px 8px',
+                borderRadius: '100px',
+              }}>
+                ✓ Terverifikasi
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '13px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: '#64748b' }}>Karyawan</span>
+                <span style={{ fontWeight: '700', color: '#0f172a' }}>{profile.name}</span>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: '#64748b' }}>Sesi</span>
+                <span style={{ fontWeight: '700', color: '#0f172a' }}>{sessionEmoji} {sessionLabel}</span>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: '#64748b' }}>Waktu Presensi</span>
+                <span style={{ fontWeight: '700', color: '#166534' }}>⏱️ {formattedTime}</span>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: '#64748b' }}>Tanggal</span>
+                <span style={{ fontWeight: '600', color: '#0f172a' }}>{formattedDate}</span>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: '#64748b' }}>Lokasi KHDTK</span>
+                <span style={{ fontWeight: '600', color: '#0f172a' }}>📍 {displayLocationName || 'KHDTK'}</span>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: '#64748b' }}>Dokumentasi</span>
+                <span style={{ fontWeight: '600', color: '#0f172a' }}>📷 {files.length} Foto Tersimpan</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <Link
+              href="/"
+              id="btn-back-home-success"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                padding: '14px 20px',
+                borderRadius: '14px',
+                background: '#166534',
+                color: '#ffffff',
+                fontSize: '14px',
+                fontWeight: '800',
+                textDecoration: 'none',
+                boxShadow: '0 4px 14px rgba(22, 101, 52, 0.25)',
+                transition: 'all 0.2s',
+              }}
+            >
               🏠 Kembali ke Beranda
             </Link>
+
+            {session === 'special' && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSubmitSuccess(false);
+                  setFiles([]);
+                  setFilePreviews([]);
+                  setRoutineActivity('');
+                  setIncidentActivity('Nihil');
+                  setFieldCondition('');
+                  setFollowUp('');
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  padding: '12px 20px',
+                  borderRadius: '14px',
+                  background: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  color: '#475569',
+                  fontSize: '13px',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                }}
+              >
+                ➕ Input Laporan Khusus Lain
+              </button>
+            )}
           </div>
         </div>
       </div>
