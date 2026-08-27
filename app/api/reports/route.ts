@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, after } from 'next/server';
 import { getProfile } from '@/lib/auth';
 import { createAdminClient } from '@/lib/supabase';
 import { isWithinWindow, getTodayLocalDate } from '@/lib/time';
@@ -119,7 +119,16 @@ export async function POST(request: Request) {
 
     const maps_url = `https://www.google.com/maps?q=${latitude},${longitude}`;
 
-    // === CREATE REPORT ===
+    // Read all file buffers into memory
+    const filePayloads = await Promise.all(
+      files.map(async (f) => ({
+        name: f.name,
+        type: f.type || 'image/jpeg',
+        buffer: Buffer.from(await f.arrayBuffer()),
+      }))
+    );
+
+    // === CREATE REPORT IN DATABASE (Instant <100ms) ===
     const { data: report, error: reportError } = await adminClient
       .from('reports')
       .insert({
@@ -147,52 +156,60 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Gagal menyimpan laporan ke database' }, { status: 500 });
     }
 
-    // === UPLOAD FILES TO GOOGLE DRIVE / CLOUD STORAGE ===
-    const uploadResults = await Promise.allSettled(
-      files.map(async (file) => {
-        const buffer = Buffer.from(await file.arrayBuffer());
-        return uploadFileToDrive(
-          buffer,
-          file.name,
-          file.type,
-          locationName,
-          profile.name,
-          serverNow
-        );
-      })
-    );
+    // Insert initial report_files records
+    const initialFiles = filePayloads.map((f) => ({
+      report_id: report.id,
+      file_name: f.name,
+      file_type: f.type,
+      drive_file_id: 'syncing',
+      drive_url: null,
+    }));
 
-    // Save file metadata to database
-    const fileInserts = uploadResults.map((r, idx) => {
-      if (r.status === 'fulfilled') {
-        const result = r.value;
-        return {
-          report_id: report.id,
-          file_name: result.file_name,
-          file_type: result.file_type,
-          drive_file_id: result.drive_file_id,
-          drive_url: result.drive_url,
-        };
-      } else {
-        console.error(`Upload error for file ${files[idx].name}:`, r.reason);
-        return {
-          report_id: report.id,
-          file_name: files[idx].name,
-          file_type: files[idx].type,
-          drive_file_id: 'pending_storage',
-          drive_url: null,
-        };
+    const { data: insertedFiles } = await adminClient
+      .from('report_files')
+      .insert(initialFiles)
+      .select('id');
+
+    // === ASYNC BACKGROUND SYNC TO GOOGLE DRIVE (Instant Client Response via after) ===
+    after(async () => {
+      try {
+        const uploadResults = await Promise.allSettled(
+          filePayloads.map(async (f) => {
+            return uploadFileToDrive(
+              f.buffer,
+              f.name,
+              f.type,
+              locationName,
+              profile.name,
+              serverNow
+            );
+          })
+        );
+
+        // Update database rows with finalized Google Drive URLs
+        for (let i = 0; i < uploadResults.length; i++) {
+          const res = uploadResults[i];
+          const rowId = insertedFiles?.[i]?.id;
+          if (rowId && res.status === 'fulfilled' && res.value?.drive_url) {
+            await adminClient
+              .from('report_files')
+              .update({
+                drive_file_id: res.value.drive_file_id,
+                drive_url: res.value.drive_url,
+              })
+              .eq('id', rowId);
+          }
+        }
+      } catch (bgErr) {
+        console.error('Background upload to Google Drive error:', bgErr);
       }
     });
 
-    if (fileInserts.length > 0) {
-      await adminClient.from('report_files').insert(fileInserts);
-    }
-
+    // Return instant success to user in <1s
     return NextResponse.json({
       success: true,
       report_id: report.id,
-      files_uploaded: fileInserts.length,
+      files_uploaded: filePayloads.length,
       timestamp: report.timestamp,
     });
   } catch (error) {
