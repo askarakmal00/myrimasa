@@ -635,10 +635,10 @@ export default function PresenceForm({ session, profile, cameraOnly = false }: P
           type="submit"
           className="btn btn-primary btn-full btn-lg"
           disabled={submitting || gpsStatus !== 'success' || files.length === 0}
-          style={{ marginTop: '8px' }}
+          style={{ marginTop: '8px', cursor: submitting ? 'not-allowed' : 'pointer' }}
         >
           {submitting ? (
-            <><span className="spinner" /> Mengirim Laporan...</>
+            <><span className="spinner" style={{ marginRight: '8px' }} /> Menyimpan Laporan...</>
           ) : (
             `${sessionEmoji} Kirim Laporan Presensi`
           )}
@@ -650,6 +650,74 @@ export default function PresenceForm({ session, profile, cameraOnly = false }: P
           </div>
         )}
       </form>
+
+      {/* Fullscreen Loading Modal Animation (Prevents accidental double-clicking) */}
+      {submitting && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(15, 23, 42, 0.7)',
+          backdropFilter: 'blur(6px)',
+          WebkitBackdropFilter: 'blur(6px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 99999,
+          padding: '20px',
+        }}>
+          <div style={{
+            background: '#ffffff',
+            borderRadius: '24px',
+            padding: '32px 24px',
+            maxWidth: '340px',
+            width: '100%',
+            textAlign: 'center',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1)',
+            animation: 'modalFadeIn 0.25s ease-out',
+          }}>
+            {/* Animated circle */}
+            <div style={{
+              width: '64px',
+              height: '64px',
+              margin: '0 auto 16px',
+              borderRadius: '50%',
+              background: '#f0fdf4',
+              border: '2px solid #bbf7d0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              <span className="spinner" style={{ width: '30px', height: '30px', borderColor: '#bbf7d0', borderTopColor: '#166534' }} />
+            </div>
+
+            <div style={{ fontSize: '17px', fontWeight: '800', color: '#0f172a', marginBottom: '6px' }}>
+              Menyimpan Presensi...
+            </div>
+
+            <div style={{ fontSize: '12px', color: '#64748b', lineHeight: 1.5 }}>
+              Mengunggah foto & data presensi. Mohon tunggu, jangan tutup halaman.
+            </div>
+
+            {/* Indeterminate progress bar */}
+            <div style={{
+              marginTop: '18px',
+              height: '4px',
+              background: '#f1f5f9',
+              borderRadius: '10px',
+              overflow: 'hidden',
+              position: 'relative',
+            }}>
+              <div style={{
+                height: '100%',
+                background: 'linear-gradient(90deg, #166534, #22c55e)',
+                borderRadius: '10px',
+                animation: 'indeterminate 1.5s infinite linear',
+                width: '60%',
+              }} />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
