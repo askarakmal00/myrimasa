@@ -214,7 +214,7 @@ export default async function PanduanPage() {
               <div style={{ fontSize: '28px', marginBottom: '6px' }}>☀️</div>
               <div style={{ fontSize: '16px', fontWeight: '900', color: '#92400e' }}>PRESENSI PAGI</div>
               <div style={{ fontSize: '20px', fontWeight: '900', color: '#b45309', margin: '6px 0' }}>
-                06.00 – 07.45
+                06.00 – 08.00
               </div>
               <div style={{ fontSize: '11px', color: '#78350f', fontWeight: '600' }}>
                 Waktu Indonesia Barat (WIB)
@@ -453,7 +453,7 @@ export default async function PanduanPage() {
           <div style={{ fontSize: '14px', color: '#475569', lineHeight: 1.7 }}>
             <p>Akun Administrator memiliki hak akses ke panel kontrol:</p>
             <ul style={{ paddingLeft: '20px', margin: '8px 0' }}>
-              <li><strong>Dashboard Real-time:</strong> Memantau kehadiran harian seluruh personil (siapa yang sudah hadir vs belum) pada 3 sesi harian (Pagi 06.00-07.45, Siang 13.00-14.00, Sore 16.00-23.59 WIB).</li>
+              <li><strong>Dashboard Real-time:</strong> Memantau kehadiran harian seluruh personil (siapa yang sudah hadir vs belum) pada 3 sesi harian (Pagi 06.00-08.00, Siang 13.00-14.00, Sore 16.00-23.59 WIB).</li>
               <li><strong>Manajemen Karyawan:</strong> Tambah personil baru, ubah penugasan lokasi, serta <strong>Ganti / Reset Password Staff langsung pada menu Edit Karyawan</strong>.</li>
               <li><strong>🎫 Lembar Akun Staff:</strong> Cetak slip akun resmi, bagikan kredensial login via WhatsApp sekali klik, dan salin ringkasan akun personil.</li>
               <li><strong>Export CSV:</strong> Unduh seluruh data laporan presensi ke file CSV dengan format standar Google Forms lengkap dengan link Google Drive dan koordinat peta.</li>
@@ -483,7 +483,7 @@ export default async function PanduanPage() {
                 Q: Tombol "Presensi Sekarang" tidak bisa diklik atau berwarna abu-abu?
               </div>
               <div style={{ fontSize: '13px', color: '#475569' }}>
-                A: Pastikan Anda membuka aplikasi pada jam sesi yang aktif (Pagi 06.00-07.45, Siang 13.00-14.00, Sore 16.00-23.59 WIB). Di luar jam tersebut, sistem terkunci secara otomatis.
+                A: Pastikan Anda membuka aplikasi pada jam sesi yang aktif (Pagi 06.00-08.00, Siang 13.00-14.00, Sore 16.00-23.59 WIB). Di luar jam tersebut, sistem terkunci secara otomatis.
               </div>
             </div>
 

@@ -6,9 +6,9 @@ export const PRESENCE_WINDOWS: Record<SessionType, PresenceWindow> = {
     label: 'Presensi Pagi',
     startHour: 6,
     startMinute: 0,
-    endHour: 7,
-    endMinute: 45,
-    timeLabel: '06.00 - 07.45',
+    endHour: 8,
+    endMinute: 0,
+    timeLabel: '06.00 - 08.00',
   },
   afternoon: {
     session: 'afternoon',

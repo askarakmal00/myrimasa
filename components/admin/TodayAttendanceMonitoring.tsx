@@ -251,7 +251,7 @@ export default function TodayAttendanceMonitoring({
             <thead>
               <tr>
                 <th style={{ minWidth: '180px' }}>Karyawan / Staff</th>
-                <th style={{ minWidth: '160px' }}>☀️ Pagi (06.00 - 07.45)</th>
+                <th style={{ minWidth: '160px' }}>☀️ Pagi (06.00 - 08.00)</th>
                 <th style={{ minWidth: '160px' }}>🌤️ Siang (13.00 - 14.00)</th>
                 <th style={{ minWidth: '160px' }}>🌙 Sore (16.00 - 23.59)</th>
                 <th style={{ minWidth: '110px' }}>Status Hari Ini</th>
