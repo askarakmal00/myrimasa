@@ -39,12 +39,21 @@ export default function AdminReportsPage() {
   }
 
   useEffect(() => {
-    fetch('/api/admin/employees').then(r => r.json()).then(d => setEmployees(Array.isArray(d) ? d : []));
-    fetch('/api/locations').then(r => r.json()).then(d => setLocations(Array.isArray(d) ? d : []));
-  }, []);
-
-  useEffect(() => {
-    fetchReports();
+    // Run all initial requests concurrently in parallel
+    Promise.all([
+      fetch(`/api/admin/reports?${buildParams()}`).then(r => r.json()),
+      fetch('/api/admin/employees').then(r => r.json()),
+      fetch('/api/locations').then(r => r.json()),
+    ]).then(([repData, empData, locData]) => {
+      setReports(repData.data || []);
+      setTotal(repData.count || 0);
+      setEmployees(Array.isArray(empData) ? empData : []);
+      setLocations(Array.isArray(locData) ? locData : []);
+      setLoading(false);
+    }).catch(err => {
+      console.error('Error fetching admin reports data:', err);
+      setLoading(false);
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

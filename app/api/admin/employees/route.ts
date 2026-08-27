@@ -12,13 +12,6 @@ export async function GET() {
 
     const adminClient = createAdminClient();
 
-    // Fetch auth users to get user_metadata with location_name & phone
-    const { data: authUsers } = await adminClient.auth.admin.listUsers();
-    const authMap = new Map();
-    (authUsers?.users || []).forEach(u => {
-      authMap.set(u.id, u.user_metadata || {});
-    });
-
     const { data, error } = await adminClient
       .from('profiles')
       .select('*')
@@ -27,19 +20,18 @@ export async function GET() {
     if (error) return NextResponse.json({ error: 'Gagal memuat data' }, { status: 500 });
 
     const enrichedProfiles = (data || []).map((p: any) => {
-      const meta = authMap.get(p.id) || {};
       const assignedLocName = getAssignedLocationName(p.email, p.name);
       const assignedStaff = STAFF_ASSIGNMENTS.find(s =>
         s.email.toLowerCase() === (p.email || '').toLowerCase() ||
         s.name.toLowerCase() === (p.name || '').toLowerCase()
       );
-      const phone = p.phone || meta.phone || assignedStaff?.phone || null;
+      const phone = p.phone || assignedStaff?.phone || null;
 
       return {
         ...p,
         phone,
-        location_id: p.location_id || meta.location_id || null,
-        location_name: p.location_name || meta.location_name || assignedLocName || null,
+        location_id: p.location_id || null,
+        location_name: p.location_name || assignedLocName || null,
       };
     });
 

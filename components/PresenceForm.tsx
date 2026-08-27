@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Location, Profile, SessionType, GpsData } from '@/lib/types';
 import { getAssignedLocationName } from '@/lib/staff-assignments';
+import { compressFiles } from '@/lib/image-compression';
 import Link from 'next/link';
 
 interface PresenceFormProps {
@@ -141,13 +142,19 @@ export default function PresenceForm({ session, profile, cameraOnly = false }: P
   }, [requestGps]);
 
   // File handling
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const selected = Array.from(e.target.files || []);
-    addFiles(selected);
+    await addFiles(selected);
+    // Reset input so same file can be chosen again if needed
+    e.target.value = '';
   }
 
-  function addFiles(newFiles: File[]) {
-    const combined = [...files, ...newFiles].slice(0, 5);
+  async function addFiles(newFiles: File[]) {
+    if (newFiles.length === 0) return;
+    
+    // Automatically downscale and compress camera photos in browser (e.g. 10MB -> 200KB)
+    const compressed = await compressFiles(newFiles);
+    const combined = [...files, ...compressed].slice(0, 5);
     setFiles(combined);
 
     // Generate previews
@@ -172,10 +179,10 @@ export default function PresenceForm({ session, profile, cameraOnly = false }: P
     setFilePreviews(newPreviews);
   }
 
-  function handleDrop(e: React.DragEvent) {
+  async function handleDrop(e: React.DragEvent) {
     e.preventDefault();
     const dropped = Array.from(e.dataTransfer.files);
-    addFiles(dropped);
+    await addFiles(dropped);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -221,6 +228,9 @@ export default function PresenceForm({ session, profile, cameraOnly = false }: P
 
     setSubmitting(true);
 
+    // Final check compress files
+    const readyFiles = await compressFiles(files);
+
     const formData = new FormData();
     formData.append('session_type', session);
     formData.append('location_id', finalLocationId || '');
@@ -235,7 +245,7 @@ export default function PresenceForm({ session, profile, cameraOnly = false }: P
     formData.append('gps_timestamp', gpsData.timestamp);
     // User local timezone offset in minutes (e.g. -420 for WIB, -480 for WITA, -540 for WIT)
     formData.append('timezone_offset', String(new Date().getTimezoneOffset()));
-    files.forEach(file => formData.append('files', file));
+    readyFiles.forEach(file => formData.append('files', file));
 
     try {
       const res = await fetch('/api/reports', {

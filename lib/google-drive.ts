@@ -44,6 +44,7 @@ export async function uploadFileToDrive(
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(12000),
       });
 
       const json = await res.json();
@@ -59,7 +60,7 @@ export async function uploadFileToDrive(
         console.warn('Google Apps Script upload response:', json);
       }
     } catch (gappsErr) {
-      console.error('Google Apps Script upload error:', gappsErr);
+      console.error('Google Apps Script upload error / timeout:', gappsErr);
     }
   }
 
