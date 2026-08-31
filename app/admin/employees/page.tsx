@@ -101,10 +101,9 @@ export default function AdminEmployeesPage() {
       `📍 *Lokasi Tugas:*\n` +
       `*${loc}*\n` +
       `━━━━━━━━━━━━━━━━━━━━\n\n` +
-      `⏰ *Jadwal 3 Sesi Presensi:*\n` +
-      `☀️ *PAGI*  : 06.00 – 08.00 WIB\n` +
-      `🌤️ *SIANG* : 13.00 – 14.00 WIB\n` +
-      `🌙 *SORE*  : 16.00 – 23.59 WIB\n\n` +
+      `⏰ *Jadwal Presensi Rutin:*\n` +
+      `☀️ *PAGI* : 06.00 – 08.00 WIB\n` +
+      `🌙 *SORE* : 16.00 – 23.59 WIB\n\n` +
       `💡 *Petunjuk Masuk:*\n` +
       `1. Buka link https://rimasa.my.id di browser HP (Chrome / Safari).\n` +
       `2. Masukkan Email & Password di atas.\n` +

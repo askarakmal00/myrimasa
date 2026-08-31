@@ -72,7 +72,7 @@ export async function signIn(formData: FormData) {
     redirect('/admin');
   }
 
-  // - Staff / Employee goes to home status hub (3 sessions overview: Pagi, Siang, Sore)
+  // - Staff / Employee goes to home status hub (Overview: Pagi & Sore)
   redirect('/');
 }
 

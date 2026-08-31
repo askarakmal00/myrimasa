@@ -36,23 +36,21 @@ export default async function HomePage() {
     redirect('/admin');
   }
 
-  // 3. For Employee/Staff: fetch today's status for all 3 routine sessions
+  // 3. For Employee/Staff: fetch today's status for routine sessions (Pagi & Sore)
   const serverNow = new Date();
-  const [morningReport, afternoonReport, eveningReport] = await Promise.all([
+  const [morningReport, eveningReport] = await Promise.all([
     getMyReportToday('morning'),
-    getMyReportToday('afternoon'),
     getMyReportToday('evening'),
   ]);
 
   const morningStatus = getPresenceStatus('morning', serverNow, morningReport);
-  const afternoonStatus = getPresenceStatus('afternoon', serverNow, afternoonReport);
   const eveningStatus = getPresenceStatus('evening', serverNow, eveningReport);
 
-  const completedCount = [morningReport, afternoonReport, eveningReport].filter(Boolean).length;
+  const completedCount = [morningReport, eveningReport].filter(Boolean).length;
 
   let summarySubLabel = 'Sesi belum diisi';
-  if (completedCount === 3) summarySubLabel = 'Semua sesi rutin selesai ✓';
-  else if (completedCount > 0) summarySubLabel = `${completedCount} dari 3 sesi selesai`;
+  if (completedCount === 2) summarySubLabel = 'Semua sesi rutin selesai ✓';
+  else if (completedCount > 0) summarySubLabel = `${completedCount} dari 2 sesi selesai`;
 
   const greeting = getGreeting();
   const firstName = profile.name ? profile.name.split(' ')[0] : 'Staff';
@@ -148,7 +146,7 @@ export default async function HomePage() {
               marginBottom: '6px',
               letterSpacing: '-0.5px',
             }}>
-              {completedCount} / 3
+              {completedCount} / 2
             </div>
             <div style={{
               fontSize: '13px',
@@ -201,20 +199,13 @@ export default async function HomePage() {
           <span>📅</span> Jadwal Presensi Rutin
         </div>
 
-        {/* 3 Routine Cards */}
+        {/* 2 Routine Cards: Pagi & Sore */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginBottom: '24px' }}>
           <PresenceCard
             session="morning"
             window={PRESENCE_WINDOWS.morning}
             status={morningStatus}
             report={morningReport ? { timestamp: morningReport.timestamp } : null}
-            isLoggedIn={true}
-          />
-          <PresenceCard
-            session="afternoon"
-            window={PRESENCE_WINDOWS.afternoon}
-            status={afternoonStatus}
-            report={afternoonReport ? { timestamp: afternoonReport.timestamp } : null}
             isLoggedIn={true}
           />
           <PresenceCard

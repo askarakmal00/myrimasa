@@ -12,7 +12,6 @@ export const dynamic = 'force-dynamic';
 
 const sessionTitles: Record<string, string> = {
   morning: 'Pagi',
-  afternoon: 'Siang',
   evening: 'Sore',
   special: 'Kejadian Khusus',
 };
@@ -37,7 +36,6 @@ export default async function PresensiPage({
   // Validate session param
   if (
     sessionParam !== 'morning' &&
-    sessionParam !== 'afternoon' &&
     sessionParam !== 'evening' &&
     sessionParam !== 'special'
   ) {

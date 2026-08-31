@@ -1,7 +1,7 @@
 // Shared TypeScript types for MyRimasa
 
 export type Role = 'employee' | 'admin';
-export type SessionType = 'morning' | 'afternoon' | 'evening' | 'special';
+export type SessionType = 'morning' | 'evening' | 'special';
 export type ReportStatus = 'submitted' | 'missed';
 export type UserStatus = 'active' | 'inactive';
 
@@ -31,7 +31,7 @@ export interface Location {
 export interface Report {
   id: string;
   user_id: string;
-  session_type: SessionType;
+  session_type: SessionType | 'afternoon';
   report_date: string; // ISO date string YYYY-MM-DD
   timestamp: string;
   location_id: string | null;

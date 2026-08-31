@@ -163,7 +163,6 @@ export default function AdminReportsPage() {
             >
               <option value="">Semua Sesi</option>
               <option value="morning">☀️ Pagi (06.00 - 08.00)</option>
-              <option value="afternoon">🌤️ Siang (13.00 - 14.00)</option>
               <option value="evening">🌙 Sore (16.00 - 23.59)</option>
               <option value="special">⚠️ Kejadian Khusus (24 Jam)</option>
             </select>

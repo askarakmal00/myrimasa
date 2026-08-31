@@ -15,7 +15,6 @@ interface PresenceFormProps {
 
 const sessionConfig: Record<SessionType, { label: string; emoji: string }> = {
   morning: { label: 'Pagi', emoji: '☀️' },
-  afternoon: { label: 'Siang', emoji: '🌤️' },
   evening: { label: 'Sore', emoji: '🌙' },
   special: { label: 'Kejadian Khusus', emoji: '⚠️' },
 };

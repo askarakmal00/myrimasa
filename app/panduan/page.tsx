@@ -74,7 +74,7 @@ export default async function PanduanPage() {
             Panduan Sistem Presensi Digital & Laporan Harian Petugas KHDTK
           </h1>
           <p style={{ fontSize: '14px', color: '#dcfce7', maxWidth: '620px', lineHeight: 1.6, margin: 0 }}>
-            Petunjuk lengkap tata cara login, jadwal 3 sesi presensi, pengambilan foto kamera HP, deteksi GPS, pengisian laporan, dan pengaturan kata sandi akun di <strong>rimasa.my.id</strong>.
+            Petunjuk lengkap tata cara login, jadwal 2 sesi presensi (Pagi &amp; Sore), pengambilan foto kamera HP, deteksi GPS, pengisian laporan, dan pengaturan kata sandi akun di <strong>rimasa.my.id</strong>.
           </p>
         </div>
 
@@ -93,7 +93,7 @@ export default async function PanduanPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '10px' }}>
             {[
               { id: 'domain-akses', label: '1. Akses Website & Simpan di HP', icon: '🌐' },
-              { id: 'jadwal-sesi', label: '2. Jadwal 3 Sesi Presensi', icon: '⏰' },
+              { id: 'jadwal-sesi', label: '2. Jadwal Sesi Presensi (Pagi & Sore)', icon: '⏰' },
               { id: 'login-password', label: '3. Login & Ganti Kata Sandi', icon: '🔑' },
               { id: 'lokasi-gps', label: '4. Lokasi Penugasan & Izin GPS', icon: '📍' },
               { id: 'kamera-foto', label: '5. Dokumentasi Foto Lapangan', icon: '📸' },
@@ -182,7 +182,7 @@ export default async function PanduanPage() {
           </div>
         </section>
 
-        {/* Section 2: Jadwal 3 Sesi Presensi */}
+        {/* Section 2: Jadwal Sesi Presensi */}
         <section id="jadwal-sesi" style={{
           background: '#ffffff',
           borderRadius: '20px',
@@ -194,12 +194,12 @@ export default async function PanduanPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
             <span style={{ fontSize: '24px' }}>⏰</span>
             <h2 style={{ fontSize: '19px', fontWeight: '800', color: '#0f172a', margin: 0 }}>
-              2. Jadwal 3 Sesi Presensi Harian (WIB)
+              2. Jadwal Sesi Presensi Rutin (WIB)
             </h2>
           </div>
 
           <p style={{ fontSize: '14px', color: '#475569', lineHeight: 1.7 }}>
-            Setiap personil pengamanan KHDTK wajib mengisi presensi 3 kali sehari sesuai jadwal waktu server (WIB / UTC+7):
+            Setiap personil pengamanan KHDTK wajib mengisi presensi 2 kali sehari sesuai jadwal waktu server (WIB / UTC+7):
           </p>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px', margin: '16px 0' }}>
@@ -215,24 +215,6 @@ export default async function PanduanPage() {
               <div style={{ fontSize: '16px', fontWeight: '900', color: '#92400e' }}>PRESENSI PAGI</div>
               <div style={{ fontSize: '20px', fontWeight: '900', color: '#b45309', margin: '6px 0' }}>
                 06.00 – 08.00
-              </div>
-              <div style={{ fontSize: '11px', color: '#78350f', fontWeight: '600' }}>
-                Waktu Indonesia Barat (WIB)
-              </div>
-            </div>
-
-            {/* Siang */}
-            <div style={{
-              background: '#fef3c7',
-              border: '1.5px solid #fcd34d',
-              borderRadius: '14px',
-              padding: '18px',
-              textAlign: 'center',
-            }}>
-              <div style={{ fontSize: '28px', marginBottom: '6px' }}>🌤️</div>
-              <div style={{ fontSize: '16px', fontWeight: '900', color: '#92400e' }}>PRESENSI SIANG</div>
-              <div style={{ fontSize: '20px', fontWeight: '900', color: '#b45309', margin: '6px 0' }}>
-                13.00 – 14.00
               </div>
               <div style={{ fontSize: '11px', color: '#78350f', fontWeight: '600' }}>
                 Waktu Indonesia Barat (WIB)
@@ -453,7 +435,7 @@ export default async function PanduanPage() {
           <div style={{ fontSize: '14px', color: '#475569', lineHeight: 1.7 }}>
             <p>Akun Administrator memiliki hak akses ke panel kontrol:</p>
             <ul style={{ paddingLeft: '20px', margin: '8px 0' }}>
-              <li><strong>Dashboard Real-time:</strong> Memantau kehadiran harian seluruh personil (siapa yang sudah hadir vs belum) pada 3 sesi harian (Pagi 06.00-08.00, Siang 13.00-14.00, Sore 16.00-23.59 WIB).</li>
+              <li><strong>Dashboard Real-time:</strong> Memantau kehadiran harian seluruh personil (siapa yang sudah hadir vs belum) pada sesi harian (Pagi 06.00-08.00 &amp; Sore 16.00-23.59 WIB).</li>
               <li><strong>Manajemen Karyawan:</strong> Tambah personil baru, ubah penugasan lokasi, serta <strong>Ganti / Reset Password Staff langsung pada menu Edit Karyawan</strong>.</li>
               <li><strong>🎫 Lembar Akun Staff:</strong> Cetak slip akun resmi, bagikan kredensial login via WhatsApp sekali klik, dan salin ringkasan akun personil.</li>
               <li><strong>Export CSV:</strong> Unduh seluruh data laporan presensi ke file CSV dengan format standar Google Forms lengkap dengan link Google Drive dan koordinat peta.</li>
@@ -483,7 +465,7 @@ export default async function PanduanPage() {
                 Q: Tombol "Presensi Sekarang" tidak bisa diklik atau berwarna abu-abu?
               </div>
               <div style={{ fontSize: '13px', color: '#475569' }}>
-                A: Pastikan Anda membuka aplikasi pada jam sesi yang aktif (Pagi 06.00-08.00, Siang 13.00-14.00, Sore 16.00-23.59 WIB). Di luar jam tersebut, sistem terkunci secara otomatis.
+                A: Pastikan Anda membuka aplikasi pada jam sesi yang aktif (Pagi 06.00-08.00 atau Sore 16.00-23.59 WIB). Di luar jam tersebut, sistem terkunci secara otomatis.
               </div>
             </div>
 

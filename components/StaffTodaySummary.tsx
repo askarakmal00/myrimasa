@@ -12,10 +12,8 @@ interface StaffTodaySummaryProps {
   name: string;
   email: string;
   morningReport: ReportInfo | null;
-  afternoonReport: ReportInfo | null;
   eveningReport: ReportInfo | null;
   morningStatus: 'open' | 'locked' | 'closed' | 'done';
-  afternoonStatus: 'open' | 'locked' | 'closed' | 'done';
   eveningStatus: 'open' | 'locked' | 'closed' | 'done';
 }
 
@@ -23,15 +21,12 @@ export default function StaffTodaySummary({
   name,
   email,
   morningReport,
-  afternoonReport,
   eveningReport,
   morningStatus,
-  afternoonStatus,
   eveningStatus,
 }: StaffTodaySummaryProps) {
   let completedCount = 0;
   if (morningReport) completedCount++;
-  if (afternoonReport) completedCount++;
   if (eveningReport) completedCount++;
 
   function renderSessionPill(
@@ -150,7 +145,7 @@ export default function StaffTodaySummary({
 
         {/* Total Status Pill Badge */}
         <div>
-          {completedCount === 3 ? (
+          {completedCount === 2 ? (
             <span style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -163,7 +158,7 @@ export default function StaffTodaySummary({
               fontWeight: '800',
               border: '1px solid #bbf7d0',
             }}>
-              ✅ LENGKAP (3/3)
+              ✅ LENGKAP (2/2)
             </span>
           ) : completedCount === 0 ? (
             <span style={{
@@ -178,7 +173,7 @@ export default function StaffTodaySummary({
               fontWeight: '800',
               border: '1px solid #fecaca',
             }}>
-              ✕ BELUM PRESENSI (0/3)
+              ✕ BELUM PRESENSI (0/2)
             </span>
           ) : (
             <span style={{
@@ -193,24 +188,24 @@ export default function StaffTodaySummary({
               fontWeight: '800',
               border: '1px solid #fde68a',
             }}>
-              ⏳ {completedCount} / 3 SESI SELESAI
+              ⏳ {completedCount} / 2 SESI SELESAI
             </span>
           )}
         </div>
       </div>
 
-      {/* 3 Mini Session Cards (Always Strictly 1 Row, 3 Columns) */}
+      {/* 2 Mini Session Cards (Strictly 1 Row, 2 Columns: Pagi & Sore) */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(3, 1fr)',
-        gap: '6px',
+        gridTemplateColumns: 'repeat(2, 1fr)',
+        gap: '8px',
       }}>
         {/* Sesi 1: PAGI */}
         <div style={{
           background: '#ffffff',
           border: '1px solid var(--color-border)',
           borderRadius: '12px',
-          padding: '10px 4px',
+          padding: '12px 6px',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
@@ -218,33 +213,33 @@ export default function StaffTodaySummary({
           gap: '4px',
         }}>
           <div style={{
-            width: '32px',
-            height: '32px',
+            width: '34px',
+            height: '34px',
             borderRadius: '50%',
             background: '#fef9c3',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '16px',
+            fontSize: '17px',
             flexShrink: 0,
           }}>
             ☀️
           </div>
           <div>
-            <div style={{ fontSize: '11px', fontWeight: '800', color: '#0f172a' }}>PAGI</div>
-            <div style={{ fontSize: '9px', color: '#64748b' }}>06.00 - 08.00</div>
+            <div style={{ fontSize: '12px', fontWeight: '800', color: '#0f172a' }}>PAGI</div>
+            <div style={{ fontSize: '10px', color: '#64748b' }}>06.00 - 08.00</div>
           </div>
-          <div style={{ width: '100%', marginTop: '2px' }}>
+          <div style={{ width: '100%', marginTop: '4px' }}>
             {renderSessionPill(morningReport, morningStatus)}
           </div>
         </div>
 
-        {/* Sesi 2: SIANG */}
+        {/* Sesi 2: SORE */}
         <div style={{
           background: '#ffffff',
           border: '1px solid var(--color-border)',
           borderRadius: '12px',
-          padding: '10px 4px',
+          padding: '12px 6px',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
@@ -252,57 +247,23 @@ export default function StaffTodaySummary({
           gap: '4px',
         }}>
           <div style={{
-            width: '32px',
-            height: '32px',
-            borderRadius: '50%',
-            background: '#fef3c7',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '16px',
-            flexShrink: 0,
-          }}>
-            🌤️
-          </div>
-          <div>
-            <div style={{ fontSize: '11px', fontWeight: '800', color: '#0f172a' }}>SIANG</div>
-            <div style={{ fontSize: '9px', color: '#64748b' }}>13.00 - 14.00</div>
-          </div>
-          <div style={{ width: '100%', marginTop: '2px' }}>
-            {renderSessionPill(afternoonReport, afternoonStatus)}
-          </div>
-        </div>
-
-        {/* Sesi 3: SORE */}
-        <div style={{
-          background: '#ffffff',
-          border: '1px solid var(--color-border)',
-          borderRadius: '12px',
-          padding: '10px 4px',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          textAlign: 'center',
-          gap: '4px',
-        }}>
-          <div style={{
-            width: '32px',
-            height: '32px',
+            width: '34px',
+            height: '34px',
             borderRadius: '50%',
             background: '#e0e7ff',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '16px',
+            fontSize: '17px',
             flexShrink: 0,
           }}>
             🌙
           </div>
           <div>
-            <div style={{ fontSize: '11px', fontWeight: '800', color: '#0f172a' }}>SORE</div>
-            <div style={{ fontSize: '9px', color: '#64748b' }}>16.00 - 23.59</div>
+            <div style={{ fontSize: '12px', fontWeight: '800', color: '#0f172a' }}>SORE</div>
+            <div style={{ fontSize: '10px', color: '#64748b' }}>16.00 - 23.59</div>
           </div>
-          <div style={{ width: '100%', marginTop: '2px' }}>
+          <div style={{ width: '100%', marginTop: '4px' }}>
             {renderSessionPill(eveningReport, eveningStatus)}
           </div>
         </div>

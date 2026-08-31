@@ -9,27 +9,22 @@ export interface EmployeeAttendanceItem {
   name: string;
   email: string;
   morningReport: { id: string; timestamp: string; locationName: string } | null;
-  afternoonReport: { id: string; timestamp: string; locationName: string } | null;
   eveningReport: { id: string; timestamp: string; locationName: string } | null;
 }
 
 interface Props {
   employees: EmployeeAttendanceItem[];
   morningOpen: boolean;
-  afternoonOpen: boolean;
   eveningOpen: boolean;
   morningPassed: boolean;
-  afternoonPassed: boolean;
   eveningPassed: boolean;
 }
 
 export default function TodayAttendanceMonitoring({
   employees,
   morningOpen,
-  afternoonOpen,
   eveningOpen,
   morningPassed,
-  afternoonPassed,
   eveningPassed,
 }: Props) {
   const [filterTab, setFilterTab] = useState<'all' | 'incomplete' | 'complete'>('all');
@@ -39,7 +34,6 @@ export default function TodayAttendanceMonitoring({
   function getCompletionCount(emp: EmployeeAttendanceItem) {
     let count = 0;
     if (emp.morningReport) count++;
-    if (emp.afternoonReport) count++;
     if (emp.eveningReport) count++;
     return count;
   }
@@ -53,12 +47,12 @@ export default function TodayAttendanceMonitoring({
     if (!matchesSearch) return false;
 
     const count = getCompletionCount(emp);
-    if (filterTab === 'complete') return count === 3;
-    if (filterTab === 'incomplete') return count < 3;
+    if (filterTab === 'complete') return count === 2;
+    if (filterTab === 'incomplete') return count < 2;
     return true;
   });
 
-  const totalComplete = employees.filter((e) => getCompletionCount(e) === 3).length;
+  const totalComplete = employees.filter((e) => getCompletionCount(e) === 2).length;
   const totalIncomplete = employees.length - totalComplete;
 
   // Render individual session cell
@@ -241,7 +235,7 @@ export default function TodayAttendanceMonitoring({
               transition: 'all 0.2s',
             }}
           >
-            ✅ Lengkap 3 Sesi ({totalComplete})
+            ✅ Lengkap 2 Sesi ({totalComplete})
           </button>
         </div>
 
@@ -252,7 +246,6 @@ export default function TodayAttendanceMonitoring({
               <tr>
                 <th style={{ minWidth: '180px' }}>Karyawan / Staff</th>
                 <th style={{ minWidth: '160px' }}>☀️ Pagi (06.00 - 08.00)</th>
-                <th style={{ minWidth: '160px' }}>🌤️ Siang (13.00 - 14.00)</th>
                 <th style={{ minWidth: '160px' }}>🌙 Sore (16.00 - 23.59)</th>
                 <th style={{ minWidth: '110px' }}>Status Hari Ini</th>
               </tr>
@@ -294,23 +287,20 @@ export default function TodayAttendanceMonitoring({
                       {renderSessionStatus(emp.morningReport, morningOpen, morningPassed)}
                     </td>
                     <td>
-                      {renderSessionStatus(emp.afternoonReport, afternoonOpen, afternoonPassed)}
-                    </td>
-                    <td>
                       {renderSessionStatus(emp.eveningReport, eveningOpen, eveningPassed)}
                     </td>
                     <td>
-                      {count === 3 ? (
+                      {count === 2 ? (
                         <span className="status-pill done" style={{ fontSize: '11px', padding: '4px 10px' }}>
-                          ✅ Lengkap (3/3)
+                          ✅ Lengkap (2/2)
                         </span>
                       ) : count === 0 ? (
                         <span className="status-pill closed" style={{ fontSize: '11px', padding: '4px 10px' }}>
-                          ❌ Belum (0/3)
+                          ❌ Belum (0/2)
                         </span>
                       ) : (
                         <span className="status-pill locked" style={{ fontSize: '11px', padding: '4px 10px', background: '#fef3c7', color: '#b45309' }}>
-                          ⏳ {count} / 3 Sesi
+                          ⏳ {count} / 2 Sesi
                         </span>
                       )}
                     </td>
@@ -319,7 +309,7 @@ export default function TodayAttendanceMonitoring({
               })
             ) : (
               <tr>
-                <td colSpan={5} className="text-center muted" style={{ padding: '36px' }}>
+                <td colSpan={4} className="text-center muted" style={{ padding: '36px' }}>
                   Tidak ada data petugas yang sesuai filter.
                 </td>
               </tr>

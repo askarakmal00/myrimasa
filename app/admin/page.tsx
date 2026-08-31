@@ -20,7 +20,6 @@ export default async function AdminDashboardPage() {
   const [
     { count: totalReports },
     { count: todayMorningCount },
-    { count: todayAfternoonCount },
     { count: todayEveningCount },
     { data: employeesData },
     { data: todayReportsData },
@@ -28,7 +27,6 @@ export default async function AdminDashboardPage() {
   ] = await Promise.all([
     client.from('reports').select('*', { count: 'exact', head: true }),
     client.from('reports').select('*', { count: 'exact', head: true }).eq('report_date', todayStr).eq('session_type', 'morning'),
-    client.from('reports').select('*', { count: 'exact', head: true }).eq('report_date', todayStr).eq('session_type', 'afternoon'),
     client.from('reports').select('*', { count: 'exact', head: true }).eq('report_date', todayStr).eq('session_type', 'evening'),
     client.from('profiles').select('id, name, email, role, status').eq('role', 'employee').eq('status', 'active').order('name'),
     client.from('reports').select('id, user_id, session_type, timestamp, locations(name)').eq('report_date', todayStr),
@@ -53,12 +51,6 @@ export default async function AdminDashboardPage() {
   const morningOpen = currentMinutes >= morningStart && currentMinutes <= morningEnd;
   const morningPassed = currentMinutes > morningEnd;
 
-  const afternoonWin = PRESENCE_WINDOWS.afternoon;
-  const afternoonStart = afternoonWin.startHour * 60 + afternoonWin.startMinute;
-  const afternoonEnd = afternoonWin.endHour * 60 + afternoonWin.endMinute;
-  const afternoonOpen = currentMinutes >= afternoonStart && currentMinutes <= afternoonEnd;
-  const afternoonPassed = currentMinutes > afternoonEnd;
-
   const eveningWin = PRESENCE_WINDOWS.evening;
   const eveningStart = eveningWin.startHour * 60 + eveningWin.startMinute;
   const eveningEnd = eveningWin.endHour * 60 + eveningWin.endMinute;
@@ -68,7 +60,6 @@ export default async function AdminDashboardPage() {
   // Map each employee with their attendance today
   const attendanceList: EmployeeAttendanceItem[] = employees.map((emp) => {
     const userMorning = todayReports.find((r) => r.user_id === emp.id && r.session_type === 'morning');
-    const userAfternoon = todayReports.find((r) => r.user_id === emp.id && r.session_type === 'afternoon');
     const userEvening = todayReports.find((r) => r.user_id === emp.id && r.session_type === 'evening');
 
     return {
@@ -80,11 +71,6 @@ export default async function AdminDashboardPage() {
         timestamp: userMorning.timestamp,
         locationName: (userMorning.locations as any)?.name || 'KHDTK',
       } : null,
-      afternoonReport: userAfternoon ? {
-        id: userAfternoon.id,
-        timestamp: userAfternoon.timestamp,
-        locationName: (userAfternoon.locations as any)?.name || 'KHDTK',
-      } : null,
       eveningReport: userEvening ? {
         id: userEvening.id,
         timestamp: userEvening.timestamp,
@@ -94,11 +80,9 @@ export default async function AdminDashboardPage() {
   });
 
   const morningDone = todayMorningCount ?? 0;
-  const afternoonDone = todayAfternoonCount ?? 0;
   const eveningDone = todayEveningCount ?? 0;
 
   const morningUnsubmitted = Math.max(0, totalEmployees - morningDone);
-  const afternoonUnsubmitted = Math.max(0, totalEmployees - afternoonDone);
   const eveningUnsubmitted = Math.max(0, totalEmployees - eveningDone);
 
   const todayLabel = formatWibDate(now.toISOString());
@@ -119,7 +103,7 @@ export default async function AdminDashboardPage() {
         </div>
       </div>
 
-      {/* 5 Stats Cards Grid with 'Sudah vs Belum' Highlights */}
+      {/* 4 Stats Cards Grid with 'Sudah vs Belum' Highlights */}
       <div className="stats-grid">
         <div className="stat-card">
           <div className="stat-card-label">Presensi Pagi (06.00 - 08.00)</div>
@@ -129,18 +113,6 @@ export default async function AdminDashboardPage() {
           <div className="stat-card-sub">
             <span style={{ color: morningUnsubmitted > 0 ? '#dc2626' : '#166534', fontWeight: '600' }}>
               {morningUnsubmitted > 0 ? `⚠️ ${morningUnsubmitted} belum presensi` : '✅ Semua hadir'}
-            </span>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-card-label">Presensi Siang (13.00 - 14.00)</div>
-          <div className="stat-card-value" style={{ color: '#b45309' }}>
-            {afternoonDone} <span style={{ fontSize: '16px', color: '#94a3b8', fontWeight: '500' }}>/ {totalEmployees}</span>
-          </div>
-          <div className="stat-card-sub">
-            <span style={{ color: afternoonUnsubmitted > 0 ? '#dc2626' : '#166534', fontWeight: '600' }}>
-              {afternoonUnsubmitted > 0 ? `⚠️ ${afternoonUnsubmitted} belum presensi` : '✅ Semua hadir'}
             </span>
           </div>
         </div>
@@ -178,10 +150,8 @@ export default async function AdminDashboardPage() {
       <TodayAttendanceMonitoring
         employees={attendanceList}
         morningOpen={morningOpen}
-        afternoonOpen={afternoonOpen}
         eveningOpen={eveningOpen}
         morningPassed={morningPassed}
-        afternoonPassed={afternoonPassed}
         eveningPassed={eveningPassed}
       />
 

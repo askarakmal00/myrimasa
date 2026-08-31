@@ -29,7 +29,6 @@ export default function PresenceCard({
     iconBorder: string;
   }> = {
     morning:   { label: 'Pagi',            icon: '☀️', iconBg: '#fef9c3', iconBorder: '#fef08a' },
-    afternoon: { label: 'Siang',           icon: '🌤️', iconBg: '#e0f2fe', iconBorder: '#bae6fd' },
     evening:   { label: 'Sore',            icon: '🌙', iconBg: '#ede9fe', iconBorder: '#ddd6fe' },
     special:   { label: 'Kejadian Khusus', icon: '⚠️', iconBg: '#ffe4e6', iconBorder: '#fecdd3' },
   };

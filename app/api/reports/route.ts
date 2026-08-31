@@ -8,7 +8,6 @@ import { getAssignedLocationName } from '@/lib/staff-assignments';
 
 const sessionLabels: Record<SessionType, string> = {
   morning: 'Pagi',
-  afternoon: 'Siang',
   evening: 'Sore',
   special: 'Kejadian Khusus',
 };
@@ -40,8 +39,8 @@ export async function POST(request: Request) {
     const files = formData.getAll('files') as File[];
 
     // Validate required fields
-    if (!session_type || !['morning', 'afternoon', 'evening', 'special'].includes(session_type)) {
-      return NextResponse.json({ error: 'Session type tidak valid (harus morning, afternoon, evening, atau special)' }, { status: 400 });
+    if (!session_type || !['morning', 'evening', 'special'].includes(session_type)) {
+      return NextResponse.json({ error: 'Session type tidak valid (harus morning, evening, atau special)' }, { status: 400 });
     }
     if (!routine_activity || !routine_activity.trim()) {
       return NextResponse.json({ error: 'Kolom Kegiatan Rutin wajib diisi' }, { status: 400 });
@@ -73,7 +72,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // === DUPLICATE CHECK (Only for fixed routine sessions: morning, afternoon, evening) ===
+    // === DUPLICATE CHECK (Only for fixed routine sessions: morning, evening) ===
     const adminClient = createAdminClient();
     const reportDate = getTodayLocalDate(timezoneOffset);
 
