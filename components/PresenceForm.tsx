@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Location, Profile, SessionType, GpsData } from '@/lib/types';
 import { getAssignedLocationName } from '@/lib/staff-assignments';
-import { compressFiles } from '@/lib/image-compression';
+import { compressImageWithStats, formatBytes, CompressionResult } from '@/lib/image-compression';
 import { formatWibDate, formatWibTime } from '@/lib/time';
 import Link from 'next/link';
 
@@ -11,6 +11,14 @@ interface PresenceFormProps {
   session: SessionType;
   profile: Profile;
   cameraOnly?: boolean;
+}
+
+interface PhotoItem {
+  file: File;
+  previewUrl: string;
+  originalSize: number;
+  compressedSize: number;
+  savingsPercent: number;
 }
 
 const sessionConfig: Record<SessionType, { label: string; emoji: string }> = {
@@ -22,6 +30,7 @@ const sessionConfig: Record<SessionType, { label: string; emoji: string }> = {
 export default function PresenceForm({ session, profile, cameraOnly = false }: PresenceFormProps) {
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const standardInputRef = useRef<HTMLInputElement>(null);
+  const draftKey = `myrimasa_draft_${profile.id}_${session}`;
 
   // Auto-assigned location name from table
   const assignedLoc = getAssignedLocationName(profile.email, profile.name);
@@ -33,8 +42,12 @@ export default function PresenceForm({ session, profile, cameraOnly = false }: P
   const [incidentActivity, setIncidentActivity] = useState('Nihil');
   const [fieldCondition, setFieldCondition] = useState('');
   const [followUp, setFollowUp] = useState('');
-  const [files, setFiles] = useState<File[]>([]);
-  const [filePreviews, setFilePreviews] = useState<string[]>([]);
+  const [photos, setPhotos] = useState<PhotoItem[]>([]);
+  const [compressing, setCompressing] = useState(false);
+  const [draftLoaded, setDraftLoaded] = useState(false);
+
+  // Network & Connectivity state
+  const [isOnline, setIsOnline] = useState(true);
 
   // Data state
   const [locations, setLocations] = useState<Location[]>([]);
@@ -42,15 +55,80 @@ export default function PresenceForm({ session, profile, cameraOnly = false }: P
   const [gpsStatus, setGpsStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [gpsError, setGpsError] = useState('');
 
-  // Submit state
+  // Submit & Auto-Retry state
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [submittedAt, setSubmittedAt] = useState('');
 
+  // Auto-retry engine state
+  const [isRetrying, setIsRetrying] = useState(false);
+  const [retryAttempt, setRetryAttempt] = useState(0);
+  const [retryCountdown, setRetryCountdown] = useState(0);
+  const countdownTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const retryFormDataRef = useRef<FormData | null>(null);
+
   const currentConfig = sessionConfig[session] || { label: session, emoji: '📝' };
   const sessionLabel = currentConfig.label;
   const sessionEmoji = currentConfig.emoji;
+
+  // Listen to network online/offline events
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setIsOnline(navigator.onLine);
+      const handleOnline = () => {
+        setIsOnline(true);
+        // If we were waiting due to offline error, trigger instant retry
+        if (isRetrying) {
+          triggerInstantRetry();
+        }
+      };
+      const handleOffline = () => setIsOnline(false);
+
+      window.addEventListener('online', handleOnline);
+      window.addEventListener('offline', handleOffline);
+
+      return () => {
+        window.removeEventListener('online', handleOnline);
+        window.removeEventListener('offline', handleOffline);
+      };
+    }
+  }, [isRetrying]);
+
+  // Load draft from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(draftKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.routineActivity) setRoutineActivity(parsed.routineActivity);
+        if (parsed.incidentActivity) setIncidentActivity(parsed.incidentActivity);
+        if (parsed.fieldCondition) setFieldCondition(parsed.fieldCondition);
+        if (parsed.followUp) setFollowUp(parsed.followUp);
+        setDraftLoaded(true);
+        setTimeout(() => setDraftLoaded(false), 4000);
+      }
+    } catch {
+      // ignore storage errors
+    }
+  }, [draftKey]);
+
+  // Auto-save draft on change
+  useEffect(() => {
+    if (routineActivity || incidentActivity !== 'Nihil' || fieldCondition || followUp) {
+      try {
+        localStorage.setItem(draftKey, JSON.stringify({
+          routineActivity,
+          incidentActivity,
+          fieldCondition,
+          followUp,
+          savedAt: Date.now(),
+        }));
+      } catch {
+        // ignore
+      }
+    }
+  }, [routineActivity, incidentActivity, fieldCondition, followUp, draftKey]);
 
   // Fetch locations to bind locationId automatically
   useEffect(() => {
@@ -141,48 +219,176 @@ export default function PresenceForm({ session, profile, cameraOnly = false }: P
     requestGps();
   }, [requestGps]);
 
-  // File handling
+  // File handling with smart client-side compression
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const selected = Array.from(e.target.files || []);
-    await addFiles(selected);
-    // Reset input so same file can be chosen again if needed
+    if (selected.length === 0) return;
+    await addPhotos(selected);
     e.target.value = '';
   }
 
-  async function addFiles(newFiles: File[]) {
+  async function addPhotos(newFiles: File[]) {
     if (newFiles.length === 0) return;
-    
-    // Automatically downscale and compress camera photos in browser (e.g. 10MB -> 200KB)
-    const compressed = await compressFiles(newFiles);
-    const combined = [...files, ...compressed].slice(0, 5);
-    setFiles(combined);
+    setCompressing(true);
 
-    // Generate previews
-    combined.forEach((file, idx) => {
-      if (filePreviews[idx]) return;
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFilePreviews(prev => {
-          const next = [...prev];
-          next[idx] = reader.result as string;
-          return next;
-        });
-      };
-      reader.readAsDataURL(file);
-    });
+    try {
+      const remainingSlots = Math.max(0, 5 - photos.length);
+      const toProcess = newFiles.slice(0, remainingSlots);
+
+      const processedList: PhotoItem[] = await Promise.all(
+        toProcess.map(async (file) => {
+          if (file.type.startsWith('image/')) {
+            const res: CompressionResult = await compressImageWithStats(file);
+            return {
+              file: res.file,
+              previewUrl: res.previewUrl,
+              originalSize: res.originalSize,
+              compressedSize: res.compressedSize,
+              savingsPercent: res.savingsPercent,
+            };
+          } else {
+            // Video or non-image
+            return {
+              file,
+              previewUrl: URL.createObjectURL(file),
+              originalSize: file.size,
+              compressedSize: file.size,
+              savingsPercent: 0,
+            };
+          }
+        })
+      );
+
+      setPhotos(prev => [...prev, ...processedList].slice(0, 5));
+    } catch (err) {
+      console.error('Image compression error:', err);
+    } finally {
+      setCompressing(false);
+    }
   }
 
-  function removeFile(idx: number) {
-    const newFiles = files.filter((_, i) => i !== idx);
-    const newPreviews = filePreviews.filter((_, i) => i !== idx);
-    setFiles(newFiles);
-    setFilePreviews(newPreviews);
+  function removePhoto(idx: number) {
+    setPhotos(prev => {
+      const target = prev[idx];
+      if (target?.previewUrl) {
+        URL.revokeObjectURL(target.previewUrl);
+      }
+      return prev.filter((_, i) => i !== idx);
+    });
   }
 
   async function handleDrop(e: React.DragEvent) {
     e.preventDefault();
     const dropped = Array.from(e.dataTransfer.files);
-    await addFiles(dropped);
+    await addPhotos(dropped);
+  }
+
+  // Clear retry timer on unmount
+  useEffect(() => {
+    return () => {
+      if (countdownTimerRef.current) {
+        clearInterval(countdownTimerRef.current);
+      }
+    };
+  }, []);
+
+  // Main Submit Pipeline with Auto-Retry
+  async function executeSubmit(attempt = 1) {
+    if (!retryFormDataRef.current) return;
+
+    setSubmitting(true);
+    setSubmitError('');
+
+    // Abort controller with 30-second timeout to handle slow mobile 3G/Edge
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+    try {
+      const res = await fetch('/api/reports', {
+        method: 'POST',
+        body: retryFormDataRef.current,
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+      const data = await res.json();
+
+      if (!res.ok) {
+        // Business logic error (e.g. outside session window, already submitted)
+        setSubmitError(data.error || 'Gagal mengirim laporan');
+        setSubmitting(false);
+        setIsRetrying(false);
+        if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
+        return;
+      }
+
+      // Success! Clear draft and show digital receipt
+      try {
+        localStorage.removeItem(draftKey);
+      } catch {}
+
+      if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
+      setIsRetrying(false);
+      setSubmitting(false);
+      setSubmitSuccess(true);
+      setSubmittedAt(data.timestamp);
+    } catch (err: any) {
+      clearTimeout(timeoutId);
+      console.warn(`Report submit attempt ${attempt} failed:`, err);
+
+      const isNetworkOrTimeout =
+        !navigator.onLine ||
+        err?.name === 'AbortError' ||
+        err?.message?.toLowerCase().includes('failed to fetch') ||
+        err?.message?.toLowerCase().includes('network') ||
+        err?.message?.toLowerCase().includes('timeout');
+
+      if (isNetworkOrTimeout && attempt < 3) {
+        // Enter auto-retry mode
+        setIsRetrying(true);
+        setRetryAttempt(attempt);
+        setSubmitting(false);
+
+        // 5 seconds countdown
+        let count = 5;
+        setRetryCountdown(count);
+
+        if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
+        countdownTimerRef.current = setInterval(() => {
+          count -= 1;
+          setRetryCountdown(count);
+          if (count <= 0) {
+            if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
+            executeSubmit(attempt + 1);
+          }
+        }, 1000);
+      } else {
+        // Stop automatic retry, show manual retry option
+        setSubmitting(false);
+        setIsRetrying(true);
+        setRetryAttempt(attempt);
+        setRetryCountdown(0);
+        if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
+        setSubmitError(
+          !navigator.onLine
+            ? 'Koneksi internet terputus. Silakan tekan tombol "Coba Kirim Ulang" saat sinyal kembali.'
+            : 'Sinyal tidak stabil saat mengirim laporan. Data Anda tersimpan aman, silakan kirim ulang.'
+        );
+      }
+    }
+  }
+
+  function triggerInstantRetry() {
+    if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
+    setRetryCountdown(0);
+    executeSubmit(retryAttempt + 1);
+  }
+
+  function cancelRetry() {
+    if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
+    setIsRetrying(false);
+    setSubmitting(false);
+    setRetryCountdown(0);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -214,7 +420,7 @@ export default function PresenceForm({ session, profile, cameraOnly = false }: P
     }
 
     // Validate files
-    if (files.length === 0) {
+    if (photos.length === 0) {
       setSubmitError('Minimal satu foto/video wajib diupload.');
       return;
     }
@@ -226,47 +432,23 @@ export default function PresenceForm({ session, profile, cameraOnly = false }: P
       if (match) finalLocationId = match.id;
     }
 
-    setSubmitting(true);
-
-    // Final check compress files
-    const readyFiles = await compressFiles(files);
-
     const formData = new FormData();
     formData.append('session_type', session);
     formData.append('location_id', finalLocationId || '');
     formData.append('location_name', displayLocationName || '');
-    formData.append('routine_activity', routineActivity);
-    formData.append('incident_activity', incidentActivity);
-    formData.append('field_condition', fieldCondition);
-    formData.append('follow_up', followUp);
+    formData.append('routine_activity', routineActivity.trim());
+    formData.append('incident_activity', incidentActivity.trim());
+    formData.append('field_condition', fieldCondition.trim());
+    formData.append('follow_up', followUp.trim());
     formData.append('latitude', String(gpsData.latitude));
     formData.append('longitude', String(gpsData.longitude));
     formData.append('address', gpsData.address || '');
     formData.append('gps_timestamp', gpsData.timestamp);
-    // User local timezone offset in minutes (e.g. -420 for WIB, -480 for WITA, -540 for WIT)
     formData.append('timezone_offset', String(new Date().getTimezoneOffset()));
-    readyFiles.forEach(file => formData.append('files', file));
+    photos.forEach(p => formData.append('files', p.file));
 
-    try {
-      const res = await fetch('/api/reports', {
-        method: 'POST',
-        body: formData,
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        setSubmitError(data.error || 'Gagal mengirim laporan');
-        setSubmitting(false);
-        return;
-      }
-
-      setSubmitSuccess(true);
-      setSubmittedAt(data.timestamp);
-    } catch {
-      setSubmitError('Terjadi kesalahan jaringan. Coba lagi.');
-      setSubmitting(false);
-    }
+    retryFormDataRef.current = formData;
+    await executeSubmit(1);
   }
 
   // ===== SUCCESS STATE (Modern Digital Receipt Card) =====
@@ -386,7 +568,7 @@ export default function PresenceForm({ session, profile, cameraOnly = false }: P
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ color: '#64748b' }}>Dokumentasi</span>
-                <span style={{ fontWeight: '600', color: '#0f172a' }}>📷 {files.length} Foto Tersimpan</span>
+                <span style={{ fontWeight: '600', color: '#0f172a' }}>📷 {photos.length} Foto Tersimpan</span>
               </div>
             </div>
           </div>
@@ -420,8 +602,7 @@ export default function PresenceForm({ session, profile, cameraOnly = false }: P
                 type="button"
                 onClick={() => {
                   setSubmitSuccess(false);
-                  setFiles([]);
-                  setFilePreviews([]);
+                  setPhotos([]);
                   setRoutineActivity('');
                   setIncidentActivity('Nihil');
                   setFieldCondition('');
@@ -451,9 +632,51 @@ export default function PresenceForm({ session, profile, cameraOnly = false }: P
     );
   }
 
+  const totalCompressedBytes = photos.reduce((acc, p) => acc + p.compressedSize, 0);
+
   // ===== FORM =====
   return (
     <div className="container" style={{ paddingTop: '20px', paddingBottom: '60px' }}>
+      {/* Offline Alert Banner */}
+      {!isOnline && (
+        <div style={{
+          background: '#fef3c7',
+          border: '1px solid #fcd34d',
+          borderRadius: '12px',
+          padding: '10px 14px',
+          fontSize: '13px',
+          color: '#92400e',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          marginBottom: '16px',
+          fontWeight: '600',
+        }}>
+          <span>📡</span>
+          <span>Mode Offline: Sinyal internet tidak terhubung. Form tetap dapat diisi dan akan otomatis dikirim saat sinyal kembali.</span>
+        </div>
+      )}
+
+      {/* Draft Restored Banner */}
+      {draftLoaded && (
+        <div style={{
+          background: '#dbeafe',
+          border: '1px solid #bfdbfe',
+          borderRadius: '12px',
+          padding: '10px 14px',
+          fontSize: '12px',
+          color: '#1e40af',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          marginBottom: '16px',
+          fontWeight: '600',
+        }}>
+          <span>💾</span>
+          <span>Draf laporan yang belum selesai sebelumnya otomatis dimuat kembali.</span>
+        </div>
+      )}
+
       {/* Header */}
       <div style={{ marginBottom: '20px' }}>
         <Link href="/" style={{ fontSize: '13px', color: 'var(--color-text-secondary)', display: 'inline-flex', alignItems: 'center', gap: '4px', marginBottom: '12px' }}>
@@ -467,7 +690,7 @@ export default function PresenceForm({ session, profile, cameraOnly = false }: P
         </p>
       </div>
 
-      {submitError && (
+      {submitError && !isRetrying && (
         <div className="alert alert-error" style={{ marginBottom: '16px' }}>
           <span>⚠️</span>
           <span>{submitError}</span>
@@ -644,17 +867,25 @@ export default function PresenceForm({ session, profile, cameraOnly = false }: P
           </div>
         </div>
 
-        {/* Foto/Video */}
+        {/* Foto/Video with Auto Compression Indicator */}
         <div className="form-section">
-          <div className="form-section-title">
-            📷 Foto/Video Dokumentasi <span style={{ color: '#dc2626', fontSize: '13px' }}>(Wajib Min. 1) *</span>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+            <div className="form-section-title" style={{ marginBottom: 0 }}>
+              📷 Foto/Video Dokumentasi <span style={{ color: '#dc2626', fontSize: '13px' }}>(Wajib Min. 1) *</span>
+            </div>
+            {compressing && (
+              <span style={{ fontSize: '11px', color: '#166534', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                <span className="spinner" style={{ width: '12px', height: '12px', borderWidth: '1.5px' }} />
+                Mengompresi...
+              </span>
+            )}
           </div>
           <div className="form-hint" style={{ marginBottom: '12px' }}>
-            Maksimal 5 file. Format: JPG, PNG, MP4, MOV, dll.
+            Maksimal 5 file. ⚡ <strong>Kompresi Otomatis Aktif:</strong> Foto otomatis dioptimalkan (~150-250 KB) agar upload kilat &amp; hemat kuota.
           </div>
 
-          {/* Upload area: Camera-Only mode (for testing) vs Standard mode (for production) */}
-          {files.length < 5 && (
+          {/* Upload area */}
+          {photos.length < 5 && (
             <div>
               {cameraOnly ? (
                 /* Camera-Only UI */
@@ -695,7 +926,7 @@ export default function PresenceForm({ session, profile, cameraOnly = false }: P
                     fontWeight: '700',
                     boxShadow: '0 2px 8px rgba(22, 101, 52, 0.2)',
                   }}>
-                    📷 Buka Kamera ({5 - files.length} slot tersisa)
+                    📷 Buka Kamera ({5 - photos.length} slot tersisa)
                   </div>
                 </div>
               ) : (
@@ -715,13 +946,13 @@ export default function PresenceForm({ session, profile, cameraOnly = false }: P
                   <div className="file-upload-text">
                     <strong>Ketuk untuk mengambil foto</strong> atau pilih dari galeri
                   </div>
-                  <div className="file-upload-hint">{5 - files.length} slot tersisa</div>
+                  <div className="file-upload-hint">{5 - photos.length} slot tersisa</div>
                 </div>
               )}
             </div>
           )}
 
-          {/* Camera-Only Input (Forces rear camera on mobile) */}
+          {/* Camera-Only Input */}
           <input
             ref={cameraInputRef}
             id="input-camera"
@@ -733,7 +964,7 @@ export default function PresenceForm({ session, profile, cameraOnly = false }: P
             aria-label="Ambil foto langsung dari kamera"
           />
 
-          {/* Standard Input (Allows Camera or Gallery on mobile) */}
+          {/* Standard Input */}
           <input
             ref={standardInputRef}
             id="input-files"
@@ -745,15 +976,15 @@ export default function PresenceForm({ session, profile, cameraOnly = false }: P
             aria-label="Input file foto atau video"
           />
 
-          {/* Previews */}
-          {files.length > 0 && (
-            <div className="file-previews" style={{ marginTop: '12px' }}>
-              {files.map((file, idx) => (
-                <div key={idx} className="file-preview-item">
-                  {filePreviews[idx] && file.type.startsWith('image/') ? (
+          {/* Previews with Compression Badge */}
+          {photos.length > 0 && (
+            <div className="file-previews" style={{ marginTop: '14px' }}>
+              {photos.map((item, idx) => (
+                <div key={idx} className="file-preview-item" style={{ position: 'relative', borderRadius: '12px', overflow: 'hidden' }}>
+                  {item.file.type.startsWith('image/') ? (
                     <img
-                      src={filePreviews[idx]}
-                      alt={file.name}
+                      src={item.previewUrl}
+                      alt={item.file.name}
                       className="file-preview-img"
                     />
                   ) : (
@@ -765,23 +996,47 @@ export default function PresenceForm({ session, profile, cameraOnly = false }: P
                       🎥
                     </div>
                   )}
+
+                  {/* Optimization Badge on Photo */}
+                  {item.savingsPercent > 0 && (
+                    <div style={{
+                      position: 'absolute',
+                      bottom: '22px',
+                      left: '4px',
+                      right: '4px',
+                      background: 'rgba(15, 23, 42, 0.75)',
+                      backdropFilter: 'blur(4px)',
+                      color: '#4ade80',
+                      fontSize: '9px',
+                      fontWeight: '800',
+                      padding: '2px 4px',
+                      borderRadius: '4px',
+                      textAlign: 'center',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}>
+                      ⚡ {formatBytes(item.compressedSize)} (-{item.savingsPercent}%)
+                    </div>
+                  )}
+
                   <div className="file-preview-overlay">
                     <button
                       type="button"
                       className="file-preview-remove"
-                      onClick={() => removeFile(idx)}
-                      aria-label={`Hapus file ${file.name}`}
+                      onClick={() => removePhoto(idx)}
+                      aria-label={`Hapus file ${item.file.name}`}
                     >
                       ✕
                     </button>
                   </div>
-                  <div className="file-preview-name">{file.name}</div>
+                  <div className="file-preview-name">{item.file.name}</div>
                 </div>
               ))}
             </div>
           )}
 
-          {files.length === 0 && (
+          {photos.length === 0 && (
             <div className="form-error" style={{ marginTop: '8px' }}>
               ⚠️ Minimal 1 foto/video wajib diupload
             </div>
@@ -793,13 +1048,13 @@ export default function PresenceForm({ session, profile, cameraOnly = false }: P
           id="btn-submit-presensi"
           type="submit"
           className="btn btn-primary btn-full btn-lg"
-          disabled={submitting || gpsStatus !== 'success' || files.length === 0}
+          disabled={submitting || compressing || gpsStatus !== 'success' || photos.length === 0}
           style={{ marginTop: '8px', cursor: submitting ? 'not-allowed' : 'pointer' }}
         >
           {submitting ? (
-            <><span className="spinner" style={{ marginRight: '8px' }} /> Menyimpan Laporan...</>
+            <><span className="spinner" style={{ marginRight: '8px' }} /> Mengunggah Laporan...</>
           ) : (
-            `${sessionEmoji} Kirim Laporan Presensi`
+            `${sessionEmoji} Kirim Laporan Presensi ${photos.length > 0 ? `(${formatBytes(totalCompressedBytes)})` : ''}`
           )}
         </button>
 
@@ -810,14 +1065,14 @@ export default function PresenceForm({ session, profile, cameraOnly = false }: P
         )}
       </form>
 
-      {/* Fullscreen Loading Modal Animation (Prevents accidental double-clicking) */}
-      {submitting && (
+      {/* Fullscreen Loading & Auto-Retry Overlay */}
+      {(submitting || isRetrying) && (
         <div style={{
           position: 'fixed',
           inset: 0,
-          background: 'rgba(15, 23, 42, 0.7)',
-          backdropFilter: 'blur(6px)',
-          WebkitBackdropFilter: 'blur(6px)',
+          background: 'rgba(15, 23, 42, 0.75)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -827,53 +1082,140 @@ export default function PresenceForm({ session, profile, cameraOnly = false }: P
           <div style={{
             background: '#ffffff',
             borderRadius: '24px',
-            padding: '32px 24px',
-            maxWidth: '340px',
+            padding: '30px 24px',
+            maxWidth: '360px',
             width: '100%',
             textAlign: 'center',
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1)',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
             animation: 'modalFadeIn 0.25s ease-out',
           }}>
-            {/* Animated circle */}
-            <div style={{
-              width: '64px',
-              height: '64px',
-              margin: '0 auto 16px',
-              borderRadius: '50%',
-              background: '#f0fdf4',
-              border: '2px solid #bbf7d0',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}>
-              <span className="spinner" style={{ width: '30px', height: '30px', borderColor: '#bbf7d0', borderTopColor: '#166534' }} />
-            </div>
+            {isRetrying ? (
+              /* Auto-Retry Mode UI */
+              <div>
+                <div style={{
+                  width: '68px',
+                  height: '68px',
+                  margin: '0 auto 16px',
+                  borderRadius: '50%',
+                  background: '#fef3c7',
+                  border: '2.5px solid #fcd34d',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '32px',
+                }}>
+                  📡
+                </div>
 
-            <div style={{ fontSize: '17px', fontWeight: '800', color: '#0f172a', marginBottom: '6px' }}>
-              Menyimpan Presensi...
-            </div>
+                <div style={{ fontSize: '18px', fontWeight: '900', color: '#92400e', marginBottom: '6px' }}>
+                  Sinyal Lemah / Terputus
+                </div>
 
-            <div style={{ fontSize: '12px', color: '#64748b', lineHeight: 1.5 }}>
-              Mengunggah foto & data presensi. Mohon tunggu, jangan tutup halaman.
-            </div>
+                <div style={{ fontSize: '12.5px', color: '#475569', lineHeight: 1.5, marginBottom: '16px' }}>
+                  {retryCountdown > 0 ? (
+                    <>
+                      Koneksi sempat terputus. Mencoba mengirim ulang otomatis dalam <strong style={{ color: '#b45309', fontSize: '14px' }}>{retryCountdown} detik</strong>...
+                      <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>
+                        (Percobaan {retryAttempt} dari 3)
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      Sinyal seluler di lokasi masih belum stabil. Data &amp; foto Anda tersimpan aman.
+                    </>
+                  )}
+                </div>
 
-            {/* Indeterminate progress bar */}
-            <div style={{
-              marginTop: '18px',
-              height: '4px',
-              background: '#f1f5f9',
-              borderRadius: '10px',
-              overflow: 'hidden',
-              position: 'relative',
-            }}>
-              <div style={{
-                height: '100%',
-                background: 'linear-gradient(90deg, #166534, #22c55e)',
-                borderRadius: '10px',
-                animation: 'indeterminate 1.5s infinite linear',
-                width: '60%',
-              }} />
-            </div>
+                {/* Countdown progress indicator */}
+                {retryCountdown > 0 && (
+                  <div style={{
+                    marginBottom: '18px',
+                    height: '6px',
+                    background: '#f1f5f9',
+                    borderRadius: '10px',
+                    overflow: 'hidden',
+                  }}>
+                    <div style={{
+                      height: '100%',
+                      background: '#d97706',
+                      borderRadius: '10px',
+                      width: `${(retryCountdown / 5) * 100}%`,
+                      transition: 'width 1s linear',
+                    }} />
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={triggerInstantRetry}
+                    className="btn btn-primary"
+                    style={{
+                      width: '100%',
+                      padding: '12px',
+                      borderRadius: '12px',
+                      background: '#166534',
+                      fontWeight: '800',
+                      fontSize: '13px',
+                    }}
+                  >
+                    🔄 Coba Kirim Ulang Sekarang
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={cancelRetry}
+                    className="btn btn-ghost"
+                    style={{ width: '100%', padding: '8px', fontSize: '12px', color: '#64748b' }}
+                  >
+                    Batal &amp; Edit Form
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* Normal Submitting Loading State */
+              <div>
+                <div style={{
+                  width: '64px',
+                  height: '64px',
+                  margin: '0 auto 16px',
+                  borderRadius: '50%',
+                  background: '#f0fdf4',
+                  border: '2px solid #bbf7d0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                  <span className="spinner" style={{ width: '30px', height: '30px', borderColor: '#bbf7d0', borderTopColor: '#166534' }} />
+                </div>
+
+                <div style={{ fontSize: '17px', fontWeight: '800', color: '#0f172a', marginBottom: '6px' }}>
+                  Menyimpan Presensi...
+                </div>
+
+                <div style={{ fontSize: '12px', color: '#64748b', lineHeight: 1.5 }}>
+                  Mengunggah foto ({formatBytes(totalCompressedBytes)}) &amp; data presensi. Mohon tunggu.
+                </div>
+
+                {/* Indeterminate progress bar */}
+                <div style={{
+                  marginTop: '18px',
+                  height: '4px',
+                  background: '#f1f5f9',
+                  borderRadius: '10px',
+                  overflow: 'hidden',
+                  position: 'relative',
+                }}>
+                  <div style={{
+                    height: '100%',
+                    background: 'linear-gradient(90deg, #166534, #22c55e)',
+                    borderRadius: '10px',
+                    animation: 'indeterminate 1.5s infinite linear',
+                    width: '60%',
+                  }} />
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
