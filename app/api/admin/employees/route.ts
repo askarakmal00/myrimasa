@@ -19,19 +19,32 @@ export async function GET() {
 
     if (error) return NextResponse.json({ error: 'Gagal memuat data' }, { status: 500 });
 
+    // Also get metadata from auth.users if available
+    let authUsersMap = new Map<string, any>();
+    try {
+      const { data: authUsers } = await adminClient.auth.admin.listUsers();
+      if (authUsers?.users) {
+        authUsers.users.forEach(u => authUsersMap.set(u.id, u));
+      }
+    } catch (e) {
+      console.warn('Could not list auth users metadata:', e);
+    }
+
     const enrichedProfiles = (data || []).map((p: any) => {
+      const authUser = authUsersMap.get(p.id);
+      const meta = authUser?.user_metadata || {};
       const assignedLocName = getAssignedLocationName(p.email, p.name);
       const assignedStaff = STAFF_ASSIGNMENTS.find(s =>
         s.email.toLowerCase() === (p.email || '').toLowerCase() ||
         s.name.toLowerCase() === (p.name || '').toLowerCase()
       );
-      const phone = p.phone || assignedStaff?.phone || null;
+      const phone = p.phone || meta.phone || assignedStaff?.phone || null;
 
       return {
         ...p,
         phone,
-        location_id: p.location_id || null,
-        location_name: p.location_name || assignedLocName || null,
+        location_id: p.location_id || meta.location_id || null,
+        location_name: p.location_name || meta.location_name || assignedLocName || null,
       };
     });
 
@@ -95,22 +108,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Gagal membuat akun user' }, { status: 500 });
     }
 
-    // 2. Ensure profile record is inserted/updated
+    // 2. Ensure profile record is inserted/updated (only valid columns in profiles table)
     const profileInsertData: any = {
       id: newUserId,
       email: email.trim().toLowerCase(),
       name: name.trim(),
       role: assignedRole,
       status: 'active',
-      phone: phone ? phone.trim() : null,
+      location_id: location_id || null,
+      location_name: locationName || null,
     };
-
-    if (location_id) {
-      profileInsertData.location_id = location_id;
-    }
-    if (locationName) {
-      profileInsertData.location_name = locationName;
-    }
 
     try {
       await adminClient.from('profiles').upsert(profileInsertData);

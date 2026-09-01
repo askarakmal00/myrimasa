@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Profile, Location } from '@/lib/types';
+import { getAssignedLocationName } from '@/lib/staff-assignments';
 
 export default function AdminEmployeesPage() {
   const [employees, setEmployees] = useState<Profile[]>([]);
@@ -178,7 +179,24 @@ export default function AdminEmployeesPage() {
     setEditEmail(emp.email);
     setEditPhone(emp.phone || '');
     setEditRole(emp.role);
-    setEditLocationId(emp.location_id || '');
+
+    // Auto-detect matching location if location_id is not yet set
+    let locId = emp.location_id || '';
+    if (!locId) {
+      const targetLocName = emp.location_name || getAssignedLocationName(emp.email, emp.name);
+      if (targetLocName && locations.length > 0) {
+        const found = locations.find(l =>
+          l.name.toLowerCase().trim() === targetLocName.toLowerCase().trim() ||
+          targetLocName.toLowerCase().includes(l.name.toLowerCase()) ||
+          l.name.toLowerCase().includes(targetLocName.toLowerCase())
+        );
+        if (found) {
+          locId = found.id;
+        }
+      }
+    }
+
+    setEditLocationId(locId);
     setEditPassword('');
     setEnablePasswordChange(false);
     setShowEditPassword(false);
@@ -302,6 +320,11 @@ export default function AdminEmployeesPage() {
     e.preventDefault();
     if (!editEmployee) return;
 
+    if (!editName.trim() || !editEmail.trim()) {
+      setEditError('Nama dan email wajib diisi');
+      return;
+    }
+
     if (enablePasswordChange && editPassword.trim().length > 0 && editPassword.trim().length < 6) {
       setEditError('Password baru minimal 6 karakter');
       return;
@@ -315,11 +338,11 @@ export default function AdminEmployeesPage() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: editName,
-          email: editEmail,
-          phone: editPhone,
+          name: editName.trim(),
+          email: editEmail.trim(),
+          phone: editPhone.trim(),
           role: editRole,
-          location_id: editRole === 'employee' ? editLocationId : null,
+          location_id: editRole === 'employee' ? (editLocationId || null) : null,
           newPassword: enablePasswordChange && editPassword.trim().length >= 6 ? editPassword.trim() : undefined,
         }),
       });
@@ -331,7 +354,7 @@ export default function AdminEmployeesPage() {
         return;
       }
 
-      fetchEmployees();
+      await fetchEmployees();
 
       if (enablePasswordChange && editPassword.trim().length >= 6) {
         setEditSuccess(true);
@@ -1077,15 +1100,14 @@ export default function AdminEmployeesPage() {
                 {editRole === 'employee' && (
                   <div className="form-group" style={{ marginBottom: '14px' }}>
                     <label className="form-label" style={{ fontSize: '12px', fontWeight: '700' }}>
-                      Lokasi KHDTK Penugasan <span style={{ color: '#dc2626' }}>*</span>
+                      Lokasi KHDTK Penugasan
                     </label>
                     <select
                       className="form-select"
                       value={editLocationId}
                       onChange={e => setEditLocationId(e.target.value)}
-                      required
                     >
-                      <option value="">-- Pilih Lokasi KHDTK --</option>
+                      <option value="">-- Pilih Lokasi KHDTK (Opsional) --</option>
                       {locations.map(loc => (
                         <option key={loc.id} value={loc.id}>📍 {loc.name}</option>
                       ))}

@@ -34,6 +34,7 @@ export async function PUT(
     // 1. Prepare Auth update payload
     const authUpdatePayload: any = {
       email: email.trim().toLowerCase(),
+      email_confirm: true,
       user_metadata: {
         name: name.trim(),
         role: assignedRole,
@@ -52,15 +53,15 @@ export async function PUT(
 
     const { error: authError } = await adminClient.auth.admin.updateUserById(id, authUpdatePayload);
     if (authError) {
+      console.error('Auth update error:', authError);
       return NextResponse.json({ error: authError.message || 'Gagal memperbarui akun autentikasi' }, { status: 400 });
     }
 
-    // 2. Update profiles table
+    // 2. Update profiles table (only valid columns in profiles schema)
     const profileUpdatePayload: any = {
       name: name.trim(),
       email: email.trim().toLowerCase(),
       role: assignedRole,
-      phone: phone ? phone.trim() : null,
       location_id: location_id || null,
       location_name: locationName,
     };
@@ -71,7 +72,21 @@ export async function PUT(
       .eq('id', id);
 
     if (profileError) {
-      console.warn('Profile table update fallback:', profileError);
+      console.warn('Profile table update with location failed, retrying basic fields:', profileError);
+      const fallbackPayload: any = {
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        role: assignedRole,
+      };
+      const { error: fallbackError } = await adminClient
+        .from('profiles')
+        .update(fallbackPayload)
+        .eq('id', id);
+
+      if (fallbackError) {
+        console.error('Fallback profile update failed:', fallbackError);
+        return NextResponse.json({ error: fallbackError.message || 'Gagal memperbarui nama dan profil pengguna' }, { status: 500 });
+      }
     }
 
     return NextResponse.json({
