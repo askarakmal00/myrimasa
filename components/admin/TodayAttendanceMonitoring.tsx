@@ -66,23 +66,22 @@ export default function TodayAttendanceMonitoring({
         <Link
           href={`/admin/reports/${report.id}`}
           style={{ textDecoration: 'none', display: 'inline-block' }}
-          title="Klik untuk melihat detail laporan"
+          title="Lihat detail laporan"
         >
           <div style={{
             display: 'inline-flex',
             flexDirection: 'column',
-            gap: '2px',
-            background: '#eafaf1',
+            gap: '1px',
+            background: 'var(--color-primary-subtle)',
             border: '1px solid #bbf7d0',
-            padding: '6px 10px',
-            borderRadius: '8px',
-            transition: 'all 0.2s',
+            padding: '4px 8px',
+            borderRadius: 'var(--radius-xs)',
           }}>
-            <span style={{ fontSize: '11px', fontWeight: '800', color: '#166534', display: 'flex', alignItems: 'center', gap: '4px' }}>
-              ✅ {formatWibTime(report.timestamp)}
+            <span style={{ fontSize: '11.5px', fontWeight: '600', color: 'var(--color-primary-dark)' }}>
+              {formatWibTime(report.timestamp).replace(' WIB', '')}
             </span>
-            <span style={{ fontSize: '11px', color: '#15803d', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '130px' }}>
-              📍 {report.locationName}
+            <span style={{ fontSize: '10.5px', color: 'var(--color-text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '140px' }}>
+              {report.locationName}
             </span>
           </div>
         </Link>
@@ -91,165 +90,103 @@ export default function TodayAttendanceMonitoring({
 
     if (isOpen) {
       return (
-        <span style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '4px',
-          padding: '6px 10px',
-          borderRadius: '8px',
-          background: '#fef3c7',
-          color: '#b45309',
-          fontSize: '11px',
-          fontWeight: '700',
-          border: '1px solid #fde68a',
-        }}>
-          ⏳ Sedang Dibuka (Belum)
+        <span className="status-pill open">
+          <span className="status-dot" /> Sedang Dibuka
         </span>
       );
     }
 
     if (isPassed) {
       return (
-        <span style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '4px',
-          padding: '6px 10px',
-          borderRadius: '8px',
-          background: '#fee2e2',
-          color: '#991b1b',
-          fontSize: '11px',
-          fontWeight: '700',
-          border: '1px solid #fecaca',
-        }}>
-          ❌ Tidak Presensi
+        <span className="status-pill closed">
+          <span className="status-dot" /> Terlewat
         </span>
       );
     }
 
     return (
-      <span style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '4px',
-        padding: '6px 10px',
-        borderRadius: '8px',
-        background: '#f1f5f9',
-        color: '#64748b',
-        fontSize: '11px',
-        fontWeight: '600',
-      }}>
-        🔒 Belum Dibuka
+      <span className="status-pill locked">
+        Belum Dibuka
       </span>
     );
   }
 
   return (
-    <div style={{ marginTop: '28px', marginBottom: '28px' }}>
-        {/* Header with Title and Search */}
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-          flexWrap: 'wrap',
-          gap: '14px',
-          marginBottom: '16px',
-        }}>
-          <div>
-            <h2 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span>👥 Monitoring Presensi Karyawan & Staff Hari Ini</span>
-            </h2>
-            <p style={{ fontSize: '13px', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
-              Pantau kehadiran dan temukan staff yang belum atau tidak melakukan presensi
-            </p>
-          </div>
-
-          {/* Search box */}
-          <div style={{ minWidth: '220px' }}>
-            <input
-              type="text"
-              className="form-input"
-              style={{ padding: '8px 14px', fontSize: '13px' }}
-              placeholder="🔍 Cari nama staff..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
+    <div style={{ marginTop: '24px', marginBottom: '24px' }}>
+      {/* Header with Title and Search */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: '12px',
+        marginBottom: '12px',
+      }}>
+        <div>
+          <h2 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--color-text)' }}>
+            Monitoring Kehadiran Hari Ini
+          </h2>
+          <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginTop: '1px' }}>
+            Pantau status kepatuhan presensi seluruh petugas lapangan
+          </p>
         </div>
 
-        {/* Filter Tabs */}
-        <div style={{
-          display: 'flex',
-          gap: '8px',
-          marginBottom: '14px',
-          flexWrap: 'wrap',
-        }}>
-          <button
-            type="button"
-            onClick={() => setFilterTab('all')}
-            style={{
-              padding: '8px 16px',
-              borderRadius: '10px',
-              fontSize: '13px',
-              fontWeight: '700',
-              border: filterTab === 'all' ? '2px solid #1b4d3e' : '1px solid var(--color-border)',
-              background: filterTab === 'all' ? '#eafaf1' : '#ffffff',
-              color: filterTab === 'all' ? '#1b4d3e' : '#475569',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-            }}
-          >
-            Semua Staff ({employees.length})
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setFilterTab('incomplete')}
-            style={{
-              padding: '8px 16px',
-              borderRadius: '10px',
-              fontSize: '13px',
-              fontWeight: '700',
-              border: filterTab === 'incomplete' ? '2px solid #dc2626' : '1px solid var(--color-border)',
-              background: filterTab === 'incomplete' ? '#fee2e2' : '#ffffff',
-              color: filterTab === 'incomplete' ? '#991b1b' : '#475569',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-            }}
-          >
-            ⚠️ Belum Lengkap / Belum Presensi ({totalIncomplete})
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setFilterTab('complete')}
-            style={{
-              padding: '8px 16px',
-              borderRadius: '10px',
-              fontSize: '13px',
-              fontWeight: '700',
-              border: filterTab === 'complete' ? '2px solid #166534' : '1px solid var(--color-border)',
-              background: filterTab === 'complete' ? '#dcfce7' : '#ffffff',
-              color: filterTab === 'complete' ? '#166534' : '#475569',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-            }}
-          >
-            ✅ Lengkap 2 Sesi ({totalComplete})
-          </button>
+        {/* Search box */}
+        <div style={{ width: '220px' }}>
+          <input
+            type="text"
+            className="form-input"
+            style={{ padding: '6px 10px', fontSize: '12.5px' }}
+            placeholder="Cari nama petugas..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
+      </div>
 
-        {/* Monitoring Table */}
-        <div className="table-wrapper">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th style={{ minWidth: '180px' }}>Karyawan / Staff</th>
-                <th style={{ minWidth: '160px' }}>☀️ Pagi (06.00 - 08.00)</th>
-                <th style={{ minWidth: '160px' }}>🌙 Sore (16.00 - 23.59)</th>
-                <th style={{ minWidth: '110px' }}>Status Hari Ini</th>
-              </tr>
-            </thead>
+      {/* Segmented Filter Control */}
+      <div style={{
+        display: 'flex',
+        gap: '6px',
+        marginBottom: '12px',
+        flexWrap: 'wrap',
+      }}>
+        <button
+          type="button"
+          onClick={() => setFilterTab('all')}
+          className={`btn ${filterTab === 'all' ? 'btn-primary' : 'btn-secondary'} btn-sm`}
+        >
+          Semua ({employees.length})
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setFilterTab('incomplete')}
+          className={`btn ${filterTab === 'incomplete' ? 'btn-danger' : 'btn-secondary'} btn-sm`}
+        >
+          Belum Lengkap ({totalIncomplete})
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setFilterTab('complete')}
+          className={`btn ${filterTab === 'complete' ? 'btn-primary' : 'btn-secondary'} btn-sm`}
+        >
+          Lengkap 2 Sesi ({totalComplete})
+        </button>
+      </div>
+
+      {/* Monitoring Table */}
+      <div className="table-wrapper">
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th style={{ minWidth: '180px' }}>Petugas Lapangan</th>
+              <th style={{ minWidth: '150px' }}>Pagi (06.00 – 08.00)</th>
+              <th style={{ minWidth: '150px' }}>Sore (16.00 – 23.59)</th>
+              <th style={{ minWidth: '110px' }}>Status Hari Ini</th>
+            </tr>
+          </thead>
           <tbody>
             {filteredEmployees.length > 0 ? (
               filteredEmployees.map((emp) => {
@@ -257,27 +194,27 @@ export default function TodayAttendanceMonitoring({
                 return (
                   <tr key={emp.id}>
                     <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <div style={{
-                          width: '34px',
-                          height: '34px',
+                          width: '26px',
+                          height: '26px',
                           borderRadius: '50%',
-                          background: '#1b4d3e',
-                          color: '#ffffff',
+                          background: '#e2e8f0',
+                          color: '#334155',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          fontSize: '13px',
-                          fontWeight: '800',
+                          fontSize: '11px',
+                          fontWeight: '600',
                           flexShrink: 0,
                         }}>
                           {emp.name.charAt(0).toUpperCase()}
                         </div>
                         <div>
-                          <div style={{ fontWeight: '700', fontSize: '13px', color: '#0f172a' }}>
+                          <div style={{ fontWeight: '600', fontSize: '12.5px', color: 'var(--color-text)' }}>
                             {emp.name}
                           </div>
-                          <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>
+                          <div style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
                             {emp.email}
                           </div>
                         </div>
@@ -291,16 +228,16 @@ export default function TodayAttendanceMonitoring({
                     </td>
                     <td>
                       {count === 2 ? (
-                        <span className="status-pill done" style={{ fontSize: '11px', padding: '4px 10px' }}>
-                          ✅ Lengkap (2/2)
+                        <span className="status-pill done">
+                          <span className="status-dot" /> Lengkap (2/2)
                         </span>
                       ) : count === 0 ? (
-                        <span className="status-pill closed" style={{ fontSize: '11px', padding: '4px 10px' }}>
-                          ❌ Belum (0/2)
+                        <span className="status-pill closed">
+                          <span className="status-dot" /> Belum (0/2)
                         </span>
                       ) : (
-                        <span className="status-pill locked" style={{ fontSize: '11px', padding: '4px 10px', background: '#fef3c7', color: '#b45309' }}>
-                          ⏳ {count} / 2 Sesi
+                        <span className="status-pill locked" style={{ background: '#fef3c7', color: '#92400e', borderColor: '#fde68a' }}>
+                          {count} dari 2 Sesi
                         </span>
                       )}
                     </td>
@@ -309,7 +246,7 @@ export default function TodayAttendanceMonitoring({
               })
             ) : (
               <tr>
-                <td colSpan={4} className="text-center muted" style={{ padding: '36px' }}>
+                <td colSpan={4} className="text-center muted" style={{ padding: '28px', textAlign: 'center' }}>
                   Tidak ada data petugas yang sesuai filter.
                 </td>
               </tr>

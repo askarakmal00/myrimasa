@@ -88,65 +88,60 @@ export default async function AdminDashboardPage() {
   const todayLabel = formatWibDate(now.toISOString());
 
   function getBadge(session: string) {
-    if (session === 'morning') return <span className="badge badge-morning">☀️ Pagi</span>;
-    if (session === 'afternoon') return <span className="badge" style={{ background: '#fef3c7', color: '#b45309' }}>🌤️ Siang</span>;
-    if (session === 'special') return <span className="badge" style={{ background: '#ffe4e6', color: '#be123c', border: '1px solid #fecdd3' }}>⚠️ Khusus</span>;
-    return <span className="badge badge-evening">🌙 Sore</span>;
+    if (session === 'morning') return <span className="badge badge-morning">Pagi</span>;
+    if (session === 'special') return <span className="badge" style={{ background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca' }}>Insidentil</span>;
+    return <span className="badge badge-evening">Sore</span>;
   }
 
   return (
     <div>
       <div className="page-header">
         <div>
-          <h1 className="page-title">Dashboard Admin</h1>
+          <h1 className="page-title">Ringkasan Operasional</h1>
           <p className="page-subtitle">{todayLabel}</p>
         </div>
       </div>
 
-      {/* 4 Stats Cards Grid with 'Sudah vs Belum' Highlights */}
+      {/* 4 Stats Cards Grid */}
       <div className="stats-grid">
         <div className="stat-card">
-          <div className="stat-card-label">Presensi Pagi (06.00 - 08.00)</div>
-          <div className="stat-card-value" style={{ color: '#d97706' }}>
-            {morningDone} <span style={{ fontSize: '16px', color: '#94a3b8', fontWeight: '500' }}>/ {totalEmployees}</span>
+          <div className="stat-card-label">Presensi Pagi (06.00 – 08.00)</div>
+          <div className="stat-card-value">
+            {morningDone} <span style={{ fontSize: '14px', color: 'var(--color-text-muted)', fontWeight: '400' }}>/ {totalEmployees}</span>
           </div>
           <div className="stat-card-sub">
-            <span style={{ color: morningUnsubmitted > 0 ? '#dc2626' : '#166534', fontWeight: '600' }}>
-              {morningUnsubmitted > 0 ? `⚠️ ${morningUnsubmitted} belum presensi` : '✅ Semua hadir'}
-            </span>
+            {morningUnsubmitted > 0 ? `${morningUnsubmitted} belum presensi` : 'Semua hadir'}
           </div>
         </div>
 
         <div className="stat-card">
-          <div className="stat-card-label">Presensi Sore (16.00 - 23.59)</div>
-          <div className="stat-card-value" style={{ color: '#4338ca' }}>
-            {eveningDone} <span style={{ fontSize: '16px', color: '#94a3b8', fontWeight: '500' }}>/ {totalEmployees}</span>
+          <div className="stat-card-label">Presensi Sore (16.00 – 23.59)</div>
+          <div className="stat-card-value">
+            {eveningDone} <span style={{ fontSize: '14px', color: 'var(--color-text-muted)', fontWeight: '400' }}>/ {totalEmployees}</span>
           </div>
           <div className="stat-card-sub">
-            <span style={{ color: eveningUnsubmitted > 0 ? '#dc2626' : '#166534', fontWeight: '600' }}>
-              {eveningUnsubmitted > 0 ? `⚠️ ${eveningUnsubmitted} belum presensi` : '✅ Semua hadir'}
-            </span>
+            {eveningUnsubmitted > 0 ? `${eveningUnsubmitted} belum presensi` : 'Semua hadir'}
           </div>
         </div>
 
         <div className="stat-card">
           <div className="stat-card-label">Total Laporan Masuk</div>
-          <div className="stat-card-value" style={{ color: '#1e5631' }}>
+          <div className="stat-card-value">
             {totalReports ?? 0}
           </div>
-          <div className="stat-card-sub">📋 Semua sesi & waktu</div>
+          <div className="stat-card-sub">Seluruh arsip presensi</div>
         </div>
 
         <div className="stat-card">
-          <div className="stat-card-label">Total Karyawan Aktif</div>
-          <div className="stat-card-value" style={{ color: '#0f172a' }}>
+          <div className="stat-card-label">Petugas Lapangan Aktif</div>
+          <div className="stat-card-value">
             {totalEmployees}
           </div>
-          <div className="stat-card-sub">👤 Terdaftar di sistem</div>
+          <div className="stat-card-sub">Terdaftar di sistem</div>
         </div>
       </div>
 
-      {/* Today Attendance Matrix Monitoring (Track Who Has / Has Not Submitted) */}
+      {/* Today Attendance Matrix Monitoring */}
       <TodayAttendanceMonitoring
         employees={attendanceList}
         morningOpen={morningOpen}
@@ -156,8 +151,8 @@ export default async function AdminDashboardPage() {
       />
 
       {/* Recent reports section */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', marginTop: '32px' }}>
-        <h2 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a' }}>Laporan Masuk Terbaru</h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', marginTop: '28px' }}>
+        <h2 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--color-text)' }}>Laporan Presensi Terbaru</h2>
         <Link href="/admin/reports" className="btn btn-secondary btn-sm">Lihat Semua Laporan →</Link>
       </div>
 
@@ -166,10 +161,10 @@ export default async function AdminDashboardPage() {
           <thead>
             <tr>
               <th>Waktu</th>
-              <th>Karyawan</th>
-              <th>Lokasi</th>
+              <th>Petugas</th>
+              <th>Lokasi Penugasan</th>
               <th>Sesi</th>
-              <th></th>
+              <th style={{ textAlign: 'right' }}>Aksi</th>
             </tr>
           </thead>
           <tbody>
@@ -180,17 +175,17 @@ export default async function AdminDashboardPage() {
                     {new Date(r.timestamp).toLocaleString('id-ID', {
                       day: '2-digit', month: '2-digit',
                       hour: '2-digit', minute: '2-digit'
-                    })}
+                    })} WIB
                   </td>
                   <td>
-                    <div style={{ fontWeight: '700', fontSize: '13px' }}>{r.profiles?.name}</div>
-                    <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>{r.profiles?.email}</div>
+                    <div style={{ fontWeight: '600', fontSize: '13px' }}>{r.profiles?.name}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>{r.profiles?.email}</div>
                   </td>
                   <td className="muted truncate">{r.locations?.name || '—'}</td>
                   <td>
                     {getBadge(r.session_type)}
                   </td>
-                  <td>
+                  <td style={{ textAlign: 'right' }}>
                     <Link
                       href={`/admin/reports/${r.id}`}
                       id={`btn-view-report-${r.id}`}
@@ -203,8 +198,8 @@ export default async function AdminDashboardPage() {
               ))
             ) : (
               <tr>
-                <td colSpan={5} className="text-center muted" style={{ padding: '36px' }}>
-                  Belum ada laporan
+                <td colSpan={5} className="text-center muted" style={{ padding: '32px', textAlign: 'center' }}>
+                  Belum ada laporan presensi hari ini.
                 </td>
               </tr>
             )}

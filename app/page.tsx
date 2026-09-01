@@ -58,179 +58,132 @@ export default async function HomePage() {
   return (
     <div className="page">
       <div className="container">
-        {/* Top Header Card */}
+        {/* Top Header */}
         <Header profile={profile} />
 
-        {/* User Greeting & Notification Header Bar */}
+        {/* Page Header / Welcome */}
         <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: '18px',
-          padding: '0 2px',
+          marginBottom: '20px',
         }}>
-          <div>
+          <div style={{
+            fontSize: '13px',
+            color: 'var(--color-text-secondary)',
+            fontWeight: '500',
+          }}>
+            {greeting}
+          </div>
+          <div style={{
+            fontSize: '22px',
+            fontWeight: '700',
+            color: 'var(--color-text)',
+            letterSpacing: '-0.3px',
+            marginTop: '2px',
+          }}>
+            {profile.name}
+          </div>
+          {profile.location_name && (
             <div style={{
-              fontSize: '20px',
-              fontWeight: '700',
-              color: '#0f172a',
-              lineHeight: 1.2,
-            }}>
-              {greeting},
-            </div>
-            <div style={{
-              fontSize: '24px',
-              fontWeight: '800',
-              color: '#e11d48',
-              lineHeight: 1.2,
+              fontSize: '12px',
+              color: 'var(--color-text-muted)',
               marginTop: '2px',
             }}>
-              {firstName}
+              Penugasan: {profile.location_name}
             </div>
-          </div>
-
-          {/* Circular Notification / Guide Bell Button */}
-          <Link
-            href="/panduan"
-            id="btn-header-notification"
-            title="Panduan & Notifikasi"
-            style={{
-              width: '46px',
-              height: '46px',
-              borderRadius: '50%',
-              background: '#ffffff',
-              border: '1px solid #e2e8f0',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 2px 10px rgba(0, 0, 0, 0.05)',
-              textDecoration: 'none',
-              transition: 'all 0.2s',
-              flexShrink: 0,
-            }}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-            </svg>
-          </Link>
+          )}
         </div>
 
-        {/* Solid Vibrant Summary Card (Matching Sample Layout in Pink/Rose Theme) */}
+        {/* Daily Progress Status Bar (Editorial & Clean) */}
         <div style={{
-          background: 'linear-gradient(135deg, #e11d48 0%, #be123c 100%)',
-          borderRadius: '24px',
-          padding: '22px 24px',
-          marginBottom: '28px',
+          background: 'var(--color-surface)',
+          border: '1px solid var(--color-border)',
+          borderRadius: 'var(--radius-lg)',
+          padding: '16px 20px',
+          marginBottom: '24px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: '16px',
-          boxShadow: '0 10px 25px -4px rgba(225, 29, 72, 0.35)',
-          color: '#ffffff',
+          boxShadow: 'var(--shadow-sm)',
         }}>
           <div>
             <div style={{
-              fontSize: '14px',
-              color: 'rgba(255, 255, 255, 0.85)',
+              fontSize: '12px',
               fontWeight: '600',
-              marginBottom: '4px',
+              color: 'var(--color-text-secondary)',
             }}>
-              Presensi hari ini
-            </div>
-            <div style={{
-              fontSize: '38px',
-              fontWeight: '800',
-              color: '#ffffff',
-              lineHeight: 1.1,
-              marginBottom: '6px',
-              letterSpacing: '-0.5px',
-            }}>
-              {completedCount} / 2
+              Presensi Hari Ini
             </div>
             <div style={{
               fontSize: '13px',
-              color: 'rgba(255, 255, 255, 0.9)',
+              color: completedCount === 2 ? '#15803d' : 'var(--color-text)',
               fontWeight: '500',
+              marginTop: '2px',
             }}>
               {summarySubLabel}
             </div>
           </div>
 
-          {/* Double Concentric Circle Clock Icon */}
           <div style={{
-            width: '68px',
-            height: '68px',
-            borderRadius: '50%',
-            background: 'rgba(255, 255, 255, 0.18)',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
+            gap: '8px',
           }}>
             <div style={{
-              width: '48px',
-              height: '48px',
-              borderRadius: '50%',
-              background: 'rgba(255, 255, 255, 0.22)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#ffffff',
+              fontSize: '18px',
+              fontWeight: '700',
+              color: completedCount === 2 ? '#15803d' : 'var(--color-text)',
             }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" />
-                <polyline points="12 6 12 12 16 14" />
-              </svg>
+              {completedCount} / 2
             </div>
           </div>
         </div>
 
         {/* Section 1: Routine Presence */}
         <div style={{
-          fontSize: '17px',
-          fontWeight: '800',
-          color: '#0f172a',
-          marginBottom: '12px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
+          marginBottom: '20px',
         }}>
-          <span>📅</span> Jadwal Presensi Rutin
+          <div style={{
+            fontSize: '13.5px',
+            fontWeight: '600',
+            color: 'var(--color-text)',
+            marginBottom: '10px',
+            letterSpacing: '-0.1px',
+          }}>
+            Jadwal Presensi Rutin
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <PresenceCard
+              session="morning"
+              window={PRESENCE_WINDOWS.morning}
+              status={morningStatus}
+              report={morningReport ? { timestamp: morningReport.timestamp } : null}
+              isLoggedIn={true}
+            />
+            <PresenceCard
+              session="evening"
+              window={PRESENCE_WINDOWS.evening}
+              status={eveningStatus}
+              report={eveningReport ? { timestamp: eveningReport.timestamp } : null}
+              isLoggedIn={true}
+            />
+          </div>
         </div>
 
-        {/* 2 Routine Cards: Pagi & Sore */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginBottom: '24px' }}>
-          <PresenceCard
-            session="morning"
-            window={PRESENCE_WINDOWS.morning}
-            status={morningStatus}
-            report={morningReport ? { timestamp: morningReport.timestamp } : null}
-            isLoggedIn={true}
-          />
-          <PresenceCard
-            session="evening"
-            window={PRESENCE_WINDOWS.evening}
-            status={eveningStatus}
-            report={eveningReport ? { timestamp: eveningReport.timestamp } : null}
-            isLoggedIn={true}
-          />
-        </div>
-
-        {/* Section 2: Incidental Presence (Kejadian Khusus) */}
+        {/* Section 2: Incidental Presence */}
         <div style={{
-          fontSize: '17px',
-          fontWeight: '800',
-          color: '#0f172a',
-          marginBottom: '12px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
+          marginBottom: '24px',
         }}>
-          <span>🚨</span> Presensi Insidentil
-        </div>
+          <div style={{
+            fontSize: '13.5px',
+            fontWeight: '600',
+            color: 'var(--color-text)',
+            marginBottom: '10px',
+            letterSpacing: '-0.1px',
+          }}>
+            Laporan Insidentil
+          </div>
 
-        <div style={{ marginBottom: '24px' }}>
           <PresenceCard
             session="special"
             window={PRESENCE_WINDOWS.special}
@@ -240,43 +193,35 @@ export default async function HomePage() {
           />
         </div>
 
-        {/* Bottom Notice Card with Panduan Link */}
-        <div className="notice-card fade-in" style={{
-          marginTop: '16px',
+        {/* Footer info note */}
+        <div style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          flexWrap: 'wrap',
+          padding: '12px 16px',
+          borderRadius: 'var(--radius-md)',
+          background: 'var(--color-bg)',
+          border: '1px solid var(--color-border-subtle)',
+          fontSize: '12.5px',
+          color: 'var(--color-text-secondary)',
+          marginTop: '16px',
           gap: '10px',
+          flexWrap: 'wrap',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span className="notice-icon">ⓘ</span>
-            <span>Pastikan Anda melakukan presensi sesuai jadwal yang telah ditentukan.</span>
+          <div>
+            Pastikan presensi dilakukan tepat waktu sesuai jadwal operasional.
           </div>
           <Link
             href="/panduan"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '4px',
-              fontSize: '12px',
-              fontWeight: '700',
-              color: '#1e5631',
-              textDecoration: 'none',
-              padding: '5px 12px',
-              borderRadius: '8px',
-              background: '#ffffff',
-              border: '1px solid #bbf7d0',
-              flexShrink: 0,
-            }}
+            className="btn btn-secondary btn-sm"
           >
-            📖 Panduan
+            Panduan Lengkap
           </Link>
         </div>
 
         {/* Footer */}
         <div className="footer-text">
-          © 2026 MyRimasa (rimasa.my.id). Semua hak dilindungi.
+          MyRimasa — Sistem Presensi & Dokumentasi Lapangan
         </div>
       </div>
     </div>

@@ -451,150 +451,111 @@ export default function PresenceForm({ session, profile, cameraOnly = false }: P
     await executeSubmit(1);
   }
 
-  // ===== SUCCESS STATE (Modern Digital Receipt Card) =====
+  // ===== SUCCESS STATE (Clean Editorial Receipt) =====
   if (submitSuccess) {
     const formattedTime = submittedAt ? formatWibTime(submittedAt) : 'Baru saja';
     const formattedDate = submittedAt ? formatWibDate(submittedAt) : formatWibDate(new Date().toISOString());
 
     return (
-      <div className="container" style={{ paddingTop: '24px', paddingBottom: '60px', maxWidth: '440px', margin: '0 auto' }}>
-        {/* Main Card */}
-        <div style={{
-          background: '#ffffff',
-          borderRadius: '24px',
-          padding: '32px 24px 28px',
-          border: '1px solid #e2e8f0',
-          boxShadow: '0 10px 30px -5px rgba(0, 0, 0, 0.07)',
-          textAlign: 'center',
-          animation: 'modalFadeIn 0.3s ease-out',
-        }}>
-          {/* Animated Success Checkmark Badge */}
+      <div className="container" style={{ paddingTop: '32px', paddingBottom: '60px', maxWidth: '420px', margin: '0 auto' }}>
+        <div className="card" style={{ padding: '28px 24px', textAlign: 'center' }}>
+          {/* Success Icon */}
           <div style={{
-            width: '76px',
-            height: '76px',
-            margin: '0 auto 20px',
+            width: '48px',
+            height: '48px',
+            margin: '0 auto 16px',
             borderRadius: '50%',
-            background: 'linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)',
-            border: '3px solid #86efac',
+            background: 'var(--color-primary-subtle)',
+            border: '1px solid #bbf7d0',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: '0 8px 20px -4px rgba(34, 197, 94, 0.35)',
+            color: 'var(--color-primary)',
           }}>
-            <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#15803d" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="20 6 9 17 4 12" />
             </svg>
           </div>
 
           <h2 style={{
-            fontSize: '22px',
-            fontWeight: '800',
-            color: '#0f172a',
-            marginBottom: '6px',
-            letterSpacing: '-0.3px',
+            fontSize: '18px',
+            fontWeight: '700',
+            color: 'var(--color-text)',
+            marginBottom: '4px',
+            letterSpacing: '-0.2px',
           }}>
-            Presensi Berhasil!
+            Presensi Berhasil Terkirim
           </h2>
 
           <p style={{
-            fontSize: '13px',
-            color: '#64748b',
-            marginBottom: '24px',
-            lineHeight: 1.4,
+            fontSize: '12.5px',
+            color: 'var(--color-text-secondary)',
+            marginBottom: '20px',
           }}>
-            Laporan presensi <strong>{sessionLabel}</strong> Anda telah berhasil diverifikasi dan tersimpan.
+            Laporan <strong>{sessionLabel}</strong> Anda telah diverifikasi oleh sistem.
           </p>
 
-          {/* Digital Receipt Box */}
+          {/* Receipt Data Box */}
           <div style={{
-            background: '#f8fafc',
-            border: '1px solid #e2e8f0',
-            borderRadius: '16px',
-            padding: '18px 16px',
+            background: 'var(--color-bg)',
+            border: '1px solid var(--color-border)',
+            borderRadius: 'var(--radius-md)',
+            padding: '14px 16px',
             textAlign: 'left',
-            marginBottom: '24px',
+            marginBottom: '20px',
           }}>
             <div style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              paddingBottom: '12px',
-              marginBottom: '12px',
-              borderBottom: '1px dashed #cbd5e1',
+              paddingBottom: '10px',
+              marginBottom: '10px',
+              borderBottom: '1px solid var(--color-border)',
             }}>
-              <span style={{ fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                BUKTI PRESENSI DIGITAL
+              <span style={{ fontSize: '11px', fontWeight: '600', color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
+                Bukti Presensi
               </span>
-              <span style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px',
-                fontSize: '11px',
-                fontWeight: '700',
-                color: '#166534',
-                background: '#dcfce7',
-                padding: '2px 8px',
-                borderRadius: '100px',
-              }}>
-                ✓ Terverifikasi
+              <span className="badge badge-morning" style={{ fontSize: '10.5px' }}>
+                Terverifikasi
               </span>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '13px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ color: '#64748b' }}>Karyawan</span>
-                <span style={{ fontWeight: '700', color: '#0f172a' }}>{profile.name}</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12.5px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--color-text-secondary)' }}>Petugas</span>
+                <span style={{ fontWeight: '600', color: 'var(--color-text)' }}>{profile.name}</span>
               </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ color: '#64748b' }}>Sesi</span>
-                <span style={{ fontWeight: '700', color: '#0f172a' }}>{sessionEmoji} {sessionLabel}</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--color-text-secondary)' }}>Sesi</span>
+                <span style={{ fontWeight: '600', color: 'var(--color-text)' }}>{sessionLabel}</span>
               </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ color: '#64748b' }}>Waktu Presensi</span>
-                <span style={{ fontWeight: '700', color: '#166534' }}>⏱️ {formattedTime}</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--color-text-secondary)' }}>Waktu</span>
+                <span style={{ fontWeight: '600', color: 'var(--color-primary)' }}>{formattedTime}</span>
               </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ color: '#64748b' }}>Tanggal</span>
-                <span style={{ fontWeight: '600', color: '#0f172a' }}>{formattedDate}</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--color-text-secondary)' }}>Tanggal</span>
+                <span style={{ color: 'var(--color-text)' }}>{formattedDate}</span>
               </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ color: '#64748b' }}>Lokasi KHDTK</span>
-                <span style={{ fontWeight: '600', color: '#0f172a' }}>📍 {displayLocationName || 'KHDTK'}</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--color-text-secondary)' }}>Lokasi</span>
+                <span style={{ color: 'var(--color-text)' }}>{displayLocationName || 'KHDTK'}</span>
               </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ color: '#64748b' }}>Dokumentasi</span>
-                <span style={{ fontWeight: '600', color: '#0f172a' }}>📷 {photos.length} Foto Tersimpan</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--color-text-secondary)' }}>Dokumentasi</span>
+                <span style={{ color: 'var(--color-text)' }}>{photos.length} Foto</span>
               </div>
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {/* Actions */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <Link
               href="/"
               id="btn-back-home-success"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                padding: '14px 20px',
-                borderRadius: '14px',
-                background: '#166534',
-                color: '#ffffff',
-                fontSize: '14px',
-                fontWeight: '800',
-                textDecoration: 'none',
-                boxShadow: '0 4px 14px rgba(22, 101, 52, 0.25)',
-                transition: 'all 0.2s',
-              }}
+              className="btn btn-primary btn-full"
             >
-              🏠 Kembali ke Beranda
+              Kembali ke Beranda
             </Link>
 
             {session === 'special' && (
@@ -608,22 +569,9 @@ export default function PresenceForm({ session, profile, cameraOnly = false }: P
                   setFieldCondition('');
                   setFollowUp('');
                 }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px',
-                  padding: '12px 20px',
-                  borderRadius: '14px',
-                  background: '#f8fafc',
-                  border: '1px solid #e2e8f0',
-                  color: '#475569',
-                  fontSize: '13px',
-                  fontWeight: '700',
-                  cursor: 'pointer',
-                }}
+                className="btn btn-secondary btn-full btn-sm"
               >
-                ➕ Input Laporan Khusus Lain
+                Input Laporan Khusus Lainnya
               </button>
             )}
           </div>
@@ -636,71 +584,44 @@ export default function PresenceForm({ session, profile, cameraOnly = false }: P
 
   // ===== FORM =====
   return (
-    <div className="container" style={{ paddingTop: '20px', paddingBottom: '60px' }}>
+    <div className="container-narrow" style={{ paddingTop: '20px', paddingBottom: '60px' }}>
       {/* Offline Alert Banner */}
       {!isOnline && (
-        <div style={{
-          background: '#fef3c7',
-          border: '1px solid #fcd34d',
-          borderRadius: '12px',
-          padding: '10px 14px',
-          fontSize: '13px',
-          color: '#92400e',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          marginBottom: '16px',
-          fontWeight: '600',
-        }}>
-          <span>📡</span>
-          <span>Mode Offline: Sinyal internet tidak terhubung. Form tetap dapat diisi dan akan otomatis dikirim saat sinyal kembali.</span>
+        <div className="alert alert-warning" style={{ marginBottom: '16px' }}>
+          Mode Offline: Koneksi internet terputus. Data Anda tetap tersimpan dan siap dikirim ulang begitu sinyal kembali.
         </div>
       )}
 
       {/* Draft Restored Banner */}
       {draftLoaded && (
-        <div style={{
-          background: '#dbeafe',
-          border: '1px solid #bfdbfe',
-          borderRadius: '12px',
-          padding: '10px 14px',
-          fontSize: '12px',
-          color: '#1e40af',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          marginBottom: '16px',
-          fontWeight: '600',
-        }}>
-          <span>💾</span>
-          <span>Draf laporan yang belum selesai sebelumnya otomatis dimuat kembali.</span>
+        <div className="alert alert-success" style={{ marginBottom: '16px' }}>
+          Draf laporan sebelumnya otomatis dimuat kembali.
         </div>
       )}
 
       {/* Header */}
       <div style={{ marginBottom: '20px' }}>
-        <Link href="/" style={{ fontSize: '13px', color: 'var(--color-text-secondary)', display: 'inline-flex', alignItems: 'center', gap: '4px', marginBottom: '12px' }}>
-          ← Kembali
+        <Link href="/" style={{ fontSize: '12.5px', color: 'var(--color-text-secondary)', display: 'inline-flex', alignItems: 'center', gap: '4px', marginBottom: '8px' }}>
+          ← Kembali ke Jadwal
         </Link>
-        <h1 style={{ fontSize: '22px', fontWeight: '800', letterSpacing: '-0.5px' }}>
-          {sessionEmoji} Presensi {sessionLabel}
+        <h1 style={{ fontSize: '18px', fontWeight: '700', letterSpacing: '-0.3px' }}>
+          Form Presensi {sessionLabel}
         </h1>
-        <p style={{ fontSize: '13px', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
-          Isi laporan harian Anda dengan lengkap
+        <p style={{ fontSize: '12.5px', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+          Lengkapi laporan harian dan dokumentasi foto di lapangan.
         </p>
       </div>
 
       {submitError && !isRetrying && (
         <div className="alert alert-error" style={{ marginBottom: '16px' }}>
-          <span>⚠️</span>
-          <span>{submitError}</span>
+          {submitError}
         </div>
       )}
 
       <form onSubmit={handleSubmit} id="form-presensi">
-        {/* Info Karyawan */}
+        {/* Info Petugas */}
         <div className="form-section">
-          <div className="form-section-title">👤 Informasi Karyawan</div>
+          <div className="form-section-title">Informasi Petugas</div>
           <div className="form-group">
             <label className="form-label" htmlFor="field-name">Nama Lengkap</label>
             <input
@@ -725,58 +646,57 @@ export default function PresenceForm({ session, profile, cameraOnly = false }: P
           </div>
         </div>
 
-        {/* Lokasi KHDTK (Terkunci Otomatis Sesuai Penugasan) */}
+        {/* Lokasi Penugasan */}
         <div className="form-section">
-          <div className="form-section-title">📍 Lokasi KHDTK</div>
+          <div className="form-section-title">Lokasi Penugasan</div>
           <div style={{
-            background: '#f8fafc',
+            background: 'var(--color-bg)',
             border: '1px solid var(--color-border)',
-            borderRadius: 'var(--radius-md)',
-            padding: '14px 16px',
+            borderRadius: 'var(--radius-sm)',
+            padding: '10px 14px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             gap: '12px'
           }}>
             <div>
-              <div style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a' }}>
-                📍 {displayLocationName || 'KHDTK Penugasan'}
+              <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--color-text)' }}>
+                {displayLocationName || 'KHDTK Penugasan'}
               </div>
-              <div style={{ fontSize: '11px', color: '#166534', fontWeight: '600', marginTop: '2px' }}>
-                🔒 Lokasi penugasan terhubung otomatis dengan akun Anda
+              <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', marginTop: '1px' }}>
+                Lokasi terhubung otomatis dengan profil penugasan
               </div>
             </div>
-            <span className="badge badge-morning" style={{ fontSize: '11px', flexShrink: 0 }}>
-              Otomatis
+            <span className="badge badge-morning" style={{ fontSize: '10px', flexShrink: 0 }}>
+              Sesuai Akun
             </span>
           </div>
         </div>
 
         {/* GPS */}
         <div className="form-section">
-          <div className="form-section-title">🛰️ Lokasi GPS</div>
+          <div className="form-section-title">Koordinat Lokasi (GPS)</div>
           {gpsStatus === 'idle' && (
             <div className="gps-status loading">
               <div className="gps-pulse" />
-              Menunggu GPS...
+              Menunggu izin akses GPS...
             </div>
           )}
           {gpsStatus === 'loading' && (
             <div className="gps-status loading">
               <div className="gps-pulse" />
-              Mendeteksi lokasi Anda...
+              Mendeteksi koordinat GPS...
             </div>
           )}
           {gpsStatus === 'success' && gpsData && (
             <div className="gps-status success">
-              <span>📍</span>
               <div>
-                <div style={{ fontWeight: '600' }}>Lokasi berhasil terdeteksi</div>
-                <div style={{ fontSize: '12px', marginTop: '2px', opacity: 0.8 }}>
+                <div style={{ fontWeight: '600' }}>Lokasi terverifikasi</div>
+                <div style={{ fontSize: '11.5px', marginTop: '1px', opacity: 0.85 }}>
                   {gpsData.latitude.toFixed(6)}, {gpsData.longitude.toFixed(6)}
                 </div>
                 {gpsData.address && (
-                  <div style={{ fontSize: '11px', marginTop: '2px', opacity: 0.7, lineHeight: '1.4' }}>
+                  <div style={{ fontSize: '11px', marginTop: '2px', opacity: 0.75 }}>
                     {gpsData.address.substring(0, 80)}...
                   </div>
                 )}
@@ -785,9 +705,8 @@ export default function PresenceForm({ session, profile, cameraOnly = false }: P
           )}
           {gpsStatus === 'error' && (
             <div>
-              <div className="gps-status error" style={{ marginBottom: '10px' }}>
-                <span>❌</span>
-                <span>{gpsError}</span>
+              <div className="gps-status error" style={{ marginBottom: '8px' }}>
+                {gpsError}
               </div>
               <button
                 type="button"
@@ -795,7 +714,7 @@ export default function PresenceForm({ session, profile, cameraOnly = false }: P
                 className="btn btn-secondary btn-sm"
                 onClick={requestGps}
               >
-                🔄 Coba Lagi
+                Coba Deteksi Ulang
               </button>
             </div>
           )}
@@ -803,85 +722,85 @@ export default function PresenceForm({ session, profile, cameraOnly = false }: P
 
         {/* Laporan Kegiatan */}
         <div className="form-section">
-          <div className="form-section-title">📋 Laporan Kegiatan</div>
+          <div className="form-section-title">Laporan Kegiatan</div>
 
           <div className="form-group">
             <label className="form-label" htmlFor="field-routine">
-              Kegiatan Rutin yang dilaksanakan <span style={{ color: '#dc2626' }}>*</span>
+              Kegiatan Rutin <span style={{ color: '#dc2626' }}>*</span>
             </label>
             <textarea
               id="field-routine"
               className="form-textarea"
-              placeholder="Contoh: Patroli keliling area KHDTK, pemeriksaan pos jaga, dll."
+              placeholder="Contoh: Patroli jalur batas kawasan KHDTK, pemantauan pos jaga..."
               value={routineActivity}
               onChange={e => setRoutineActivity(e.target.value)}
               required
-              rows={4}
+              rows={3}
             />
           </div>
 
           <div className="form-group">
             <label className="form-label" htmlFor="field-incident">
-              Kegiatan Insidentil yang dilaksanakan <span style={{ color: '#dc2626' }}>*</span>
+              Kegiatan Insidentil <span style={{ color: '#dc2626' }}>*</span>
             </label>
             <textarea
               id="field-incident"
               className="form-textarea"
-              placeholder="Tuliskan 'Nihil' jika tidak ada"
+              placeholder="Tulis 'Nihil' bila tidak ada"
               value={incidentActivity}
               onChange={e => setIncidentActivity(e.target.value)}
               required
-              rows={3}
+              rows={2}
             />
-            <div className="form-hint">Jika tidak ada kegiatan insidentil, tulis "Nihil"</div>
+            <div className="form-hint">Jika tidak ada peristiwa khusus, cukup tulis &quot;Nihil&quot;.</div>
           </div>
 
           <div className="form-group">
             <label className="form-label" htmlFor="field-condition">
-              Hasil Kondisi di lapangan <span style={{ color: '#dc2626' }}>*</span>
+              Kondisi Lapangan <span style={{ color: '#dc2626' }}>*</span>
             </label>
             <textarea
               id="field-condition"
               className="form-textarea"
-              placeholder="Deskripsikan kondisi lapangan yang ditemukan..."
+              placeholder="Jelaskan kondisi cuaca, keamanan, dan situasi di lokasi..."
               value={fieldCondition}
               onChange={e => setFieldCondition(e.target.value)}
               required
-              rows={4}
+              rows={3}
             />
           </div>
 
           <div className="form-group" style={{ marginBottom: 0 }}>
             <label className="form-label" htmlFor="field-followup">
-              Tindak Lanjut/Usulan <span style={{ color: '#dc2626' }}>*</span>
+              Tindak Lanjut / Saran <span style={{ color: '#dc2626' }}>*</span>
             </label>
             <textarea
               id="field-followup"
               className="form-textarea"
-              placeholder="Tuliskan tindak lanjut atau usulan yang perlu dilakukan..."
+              placeholder="Tuliskan rekomendasi atau tindak lanjut..."
               value={followUp}
               onChange={e => setFollowUp(e.target.value)}
               required
-              rows={3}
+              rows={2}
             />
           </div>
         </div>
 
-        {/* Foto/Video with Auto Compression Indicator */}
+        {/* Foto Dokumentasi with Auto Compression Indicator */}
         <div className="form-section">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
             <div className="form-section-title" style={{ marginBottom: 0 }}>
-              📷 Foto/Video Dokumentasi <span style={{ color: '#dc2626', fontSize: '13px' }}>(Wajib Min. 1) *</span>
+              Dokumentasi Foto <span style={{ color: '#dc2626', fontSize: '12px' }}>*</span>
             </div>
             {compressing && (
-              <span style={{ fontSize: '11px', color: '#166534', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                <span className="spinner" style={{ width: '12px', height: '12px', borderWidth: '1.5px' }} />
+              <span style={{ fontSize: '11px', color: 'var(--color-primary)', fontWeight: '500', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                <span className="spinner" style={{ width: '10px', height: '10px', borderWidth: '1.5px', borderTopColor: 'var(--color-primary)' }} />
                 Mengompresi...
               </span>
             )}
           </div>
-          <div className="form-hint" style={{ marginBottom: '12px' }}>
-            Maksimal 5 file. ⚡ <strong>Kompresi Otomatis Aktif:</strong> Foto otomatis dioptimalkan (~150-250 KB) agar upload kilat &amp; hemat kuota.
+          <div className="form-hint" style={{ marginBottom: '10px' }}>
+            Maks. 5 file. Foto otomatis dioptimalkan agar ringan dan cepat diunggah.
           </div>
 
           {/* Upload area */}
@@ -897,40 +816,14 @@ export default function PresenceForm({ session, profile, cameraOnly = false }: P
                   tabIndex={0}
                   aria-label="Ambil foto langsung di lokasi dengan kamera"
                   onKeyDown={e => e.key === 'Enter' && cameraInputRef.current?.click()}
-                  style={{
-                    padding: '24px 20px',
-                    borderRadius: '16px',
-                    border: '2px dashed #bbf7d0',
-                    background: '#f0fdf4',
-                    cursor: 'pointer',
-                    textAlign: 'center',
-                    transition: 'all 0.2s',
-                  }}
                 >
-                  <div style={{ fontSize: '36px', marginBottom: '6px' }}>📸</div>
-                  <div style={{ fontSize: '15px', fontWeight: '800', color: '#166534', marginBottom: '4px' }}>
-                    Ambil Foto Langsung di Lokasi
+                  <div className="file-upload-text">
+                    <strong>Ambil Foto Kamera Langsung</strong>
                   </div>
-                  <div style={{ fontSize: '12px', color: '#15803d', marginBottom: '10px' }}>
-                    🔒 Mode Uji Coba: Wajib kamera langsung (galeri dinonaktifkan)
-                  </div>
-                  <div style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    padding: '8px 18px',
-                    borderRadius: '100px',
-                    background: '#166534',
-                    color: '#ffffff',
-                    fontSize: '13px',
-                    fontWeight: '700',
-                    boxShadow: '0 2px 8px rgba(22, 101, 52, 0.2)',
-                  }}>
-                    📷 Buka Kamera ({5 - photos.length} slot tersisa)
-                  </div>
+                  <div className="file-upload-hint">{5 - photos.length} slot foto tersisa</div>
                 </div>
               ) : (
-                /* Standard Normal Production UI (Camera + Gallery) */
+                /* Standard Camera + Gallery */
                 <div
                   id="file-upload-area"
                   className="file-upload-area"
@@ -942,9 +835,8 @@ export default function PresenceForm({ session, profile, cameraOnly = false }: P
                   aria-label="Area upload foto atau video"
                   onKeyDown={e => e.key === 'Enter' && standardInputRef.current?.click()}
                 >
-                  <div className="file-upload-icon">📁</div>
                   <div className="file-upload-text">
-                    <strong>Ketuk untuk mengambil foto</strong> atau pilih dari galeri
+                    <strong>Ketuk untuk ambil foto</strong> atau pilih berkas
                   </div>
                   <div className="file-upload-hint">{5 - photos.length} slot tersisa</div>
                 </div>
@@ -952,7 +844,7 @@ export default function PresenceForm({ session, profile, cameraOnly = false }: P
             </div>
           )}
 
-          {/* Camera-Only Input */}
+          {/* Hidden Inputs */}
           <input
             ref={cameraInputRef}
             id="input-camera"
@@ -961,10 +853,8 @@ export default function PresenceForm({ session, profile, cameraOnly = false }: P
             capture="environment"
             onChange={handleFileChange}
             style={{ display: 'none' }}
-            aria-label="Ambil foto langsung dari kamera"
           />
 
-          {/* Standard Input */}
           <input
             ref={standardInputRef}
             id="input-files"
@@ -973,14 +863,13 @@ export default function PresenceForm({ session, profile, cameraOnly = false }: P
             multiple
             onChange={handleFileChange}
             style={{ display: 'none' }}
-            aria-label="Input file foto atau video"
           />
 
-          {/* Previews with Compression Badge */}
+          {/* Previews with Optimization Label */}
           {photos.length > 0 && (
-            <div className="file-previews" style={{ marginTop: '14px' }}>
+            <div className="file-previews" style={{ marginTop: '12px' }}>
               {photos.map((item, idx) => (
-                <div key={idx} className="file-preview-item" style={{ position: 'relative', borderRadius: '12px', overflow: 'hidden' }}>
+                <div key={idx} className="file-preview-item">
                   {item.file.type.startsWith('image/') ? (
                     <img
                       src={item.previewUrl}
@@ -991,32 +880,28 @@ export default function PresenceForm({ session, profile, cameraOnly = false }: P
                     <div style={{
                       width: '100%', height: '100%',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: '24px',
+                      fontSize: '12px', color: 'var(--color-text-muted)',
                     }}>
-                      🎥
+                      Video
                     </div>
                   )}
 
-                  {/* Optimization Badge on Photo */}
                   {item.savingsPercent > 0 && (
                     <div style={{
                       position: 'absolute',
-                      bottom: '22px',
-                      left: '4px',
-                      right: '4px',
-                      background: 'rgba(15, 23, 42, 0.75)',
-                      backdropFilter: 'blur(4px)',
+                      bottom: '20px',
+                      left: '3px',
+                      right: '3px',
+                      background: 'rgba(17, 24, 39, 0.75)',
                       color: '#4ade80',
-                      fontSize: '9px',
-                      fontWeight: '800',
-                      padding: '2px 4px',
-                      borderRadius: '4px',
+                      fontSize: '8.5px',
+                      fontWeight: '600',
+                      padding: '1px 3px',
+                      borderRadius: '3px',
                       textAlign: 'center',
                       whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
                     }}>
-                      ⚡ {formatBytes(item.compressedSize)} (-{item.savingsPercent}%)
+                      {formatBytes(item.compressedSize)} (-{item.savingsPercent}%)
                     </div>
                   )}
 
@@ -1037,8 +922,8 @@ export default function PresenceForm({ session, profile, cameraOnly = false }: P
           )}
 
           {photos.length === 0 && (
-            <div className="form-error" style={{ marginTop: '8px' }}>
-              ⚠️ Minimal 1 foto/video wajib diupload
+            <div className="form-error" style={{ marginTop: '6px' }}>
+              Minimal 1 foto dokumentasi wajib diunggah.
             </div>
           )}
         </div>
@@ -1049,170 +934,75 @@ export default function PresenceForm({ session, profile, cameraOnly = false }: P
           type="submit"
           className="btn btn-primary btn-full btn-lg"
           disabled={submitting || compressing || gpsStatus !== 'success' || photos.length === 0}
-          style={{ marginTop: '8px', cursor: submitting ? 'not-allowed' : 'pointer' }}
+          style={{ marginTop: '4px' }}
         >
           {submitting ? (
-            <><span className="spinner" style={{ marginRight: '8px' }} /> Mengunggah Laporan...</>
+            <><span className="spinner" style={{ marginRight: '6px' }} /> Mengirim Laporan...</>
           ) : (
-            `${sessionEmoji} Kirim Laporan Presensi ${photos.length > 0 ? `(${formatBytes(totalCompressedBytes)})` : ''}`
+            `Kirim Laporan Presensi ${photos.length > 0 ? `(${formatBytes(totalCompressedBytes)})` : ''}`
           )}
         </button>
 
         {gpsStatus !== 'success' && (
-          <div className="form-hint text-center" style={{ marginTop: '8px' }}>
-            Tombol submit aktif setelah GPS berhasil dan minimal 1 foto diupload
+          <div className="form-hint text-center" style={{ marginTop: '6px', textAlign: 'center' }}>
+            Tombol kirim aktif setelah koordinat GPS terdeteksi dan foto dipilih.
           </div>
         )}
       </form>
 
-      {/* Fullscreen Loading & Auto-Retry Overlay */}
+      {/* Auto-Retry Overlay */}
       {(submitting || isRetrying) && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          background: 'rgba(15, 23, 42, 0.75)',
-          backdropFilter: 'blur(8px)',
-          WebkitBackdropFilter: 'blur(8px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 99999,
-          padding: '20px',
-        }}>
-          <div style={{
-            background: '#ffffff',
-            borderRadius: '24px',
-            padding: '30px 24px',
-            maxWidth: '360px',
-            width: '100%',
-            textAlign: 'center',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-            animation: 'modalFadeIn 0.25s ease-out',
-          }}>
+        <div className="modal-overlay">
+          <div className="modal" style={{ maxWidth: '340px', textAlign: 'center', padding: '24px 20px' }}>
             {isRetrying ? (
-              /* Auto-Retry Mode UI */
               <div>
-                <div style={{
-                  width: '68px',
-                  height: '68px',
-                  margin: '0 auto 16px',
-                  borderRadius: '50%',
-                  background: '#fef3c7',
-                  border: '2.5px solid #fcd34d',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '32px',
-                }}>
-                  📡
+                <div style={{ fontSize: '15px', fontWeight: '700', color: 'var(--color-text)', marginBottom: '4px' }}>
+                  Koneksi Terputus
                 </div>
 
-                <div style={{ fontSize: '18px', fontWeight: '900', color: '#92400e', marginBottom: '6px' }}>
-                  Sinyal Lemah / Terputus
-                </div>
-
-                <div style={{ fontSize: '12.5px', color: '#475569', lineHeight: 1.5, marginBottom: '16px' }}>
+                <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', lineHeight: 1.4, marginBottom: '14px' }}>
                   {retryCountdown > 0 ? (
                     <>
-                      Koneksi sempat terputus. Mencoba mengirim ulang otomatis dalam <strong style={{ color: '#b45309', fontSize: '14px' }}>{retryCountdown} detik</strong>...
-                      <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>
-                        (Percobaan {retryAttempt} dari 3)
-                      </div>
+                      Mencoba mengirim ulang dalam <strong>{retryCountdown} detik</strong> (Percobaan {retryAttempt}/3)...
                     </>
                   ) : (
                     <>
-                      Sinyal seluler di lokasi masih belum stabil. Data &amp; foto Anda tersimpan aman.
+                      Sinyal internet belum stabil. Data Anda tetap tersimpan dengan aman.
                     </>
                   )}
                 </div>
 
-                {/* Countdown progress indicator */}
-                {retryCountdown > 0 && (
-                  <div style={{
-                    marginBottom: '18px',
-                    height: '6px',
-                    background: '#f1f5f9',
-                    borderRadius: '10px',
-                    overflow: 'hidden',
-                  }}>
-                    <div style={{
-                      height: '100%',
-                      background: '#d97706',
-                      borderRadius: '10px',
-                      width: `${(retryCountdown / 5) * 100}%`,
-                      transition: 'width 1s linear',
-                    }} />
-                  </div>
-                )}
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <button
                     type="button"
                     onClick={triggerInstantRetry}
-                    className="btn btn-primary"
-                    style={{
-                      width: '100%',
-                      padding: '12px',
-                      borderRadius: '12px',
-                      background: '#166534',
-                      fontWeight: '800',
-                      fontSize: '13px',
-                    }}
+                    className="btn btn-primary btn-full"
                   >
-                    🔄 Coba Kirim Ulang Sekarang
+                    Kirim Ulang Sekarang
                   </button>
 
                   <button
                     type="button"
                     onClick={cancelRetry}
-                    className="btn btn-ghost"
-                    style={{ width: '100%', padding: '8px', fontSize: '12px', color: '#64748b' }}
+                    className="btn btn-ghost btn-full"
+                    style={{ fontSize: '12px' }}
                   >
-                    Batal &amp; Edit Form
+                    Kembali ke Form
                   </button>
                 </div>
               </div>
             ) : (
-              /* Normal Submitting Loading State */
               <div>
-                <div style={{
-                  width: '64px',
-                  height: '64px',
-                  margin: '0 auto 16px',
-                  borderRadius: '50%',
-                  background: '#f0fdf4',
-                  border: '2px solid #bbf7d0',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}>
-                  <span className="spinner" style={{ width: '30px', height: '30px', borderColor: '#bbf7d0', borderTopColor: '#166534' }} />
+                <div style={{ marginBottom: '12px' }}>
+                  <span className="spinner" style={{ width: '24px', height: '24px', borderColor: 'var(--color-border-strong)', borderTopColor: 'var(--color-primary)' }} />
                 </div>
 
-                <div style={{ fontSize: '17px', fontWeight: '800', color: '#0f172a', marginBottom: '6px' }}>
-                  Menyimpan Presensi...
+                <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--color-text)', marginBottom: '2px' }}>
+                  Mengirim Laporan Presensi...
                 </div>
 
-                <div style={{ fontSize: '12px', color: '#64748b', lineHeight: 1.5 }}>
-                  Mengunggah foto ({formatBytes(totalCompressedBytes)}) &amp; data presensi. Mohon tunggu.
-                </div>
-
-                {/* Indeterminate progress bar */}
-                <div style={{
-                  marginTop: '18px',
-                  height: '4px',
-                  background: '#f1f5f9',
-                  borderRadius: '10px',
-                  overflow: 'hidden',
-                  position: 'relative',
-                }}>
-                  <div style={{
-                    height: '100%',
-                    background: 'linear-gradient(90deg, #166534, #22c55e)',
-                    borderRadius: '10px',
-                    animation: 'indeterminate 1.5s infinite linear',
-                    width: '60%',
-                  }} />
+                <div style={{ fontSize: '11.5px', color: 'var(--color-text-muted)' }}>
+                  Mengunggah berkas ({formatBytes(totalCompressedBytes)}). Mohon tunggu.
                 </div>
               </div>
             )}

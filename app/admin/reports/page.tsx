@@ -74,15 +74,12 @@ export default function AdminReportsPage() {
 
   function renderSessionBadge(session: string) {
     if (session === 'morning') {
-      return <span className="badge badge-morning">☀️ Pagi</span>;
-    }
-    if (session === 'afternoon') {
-      return <span className="badge" style={{ background: '#fef3c7', color: '#b45309' }}>🌤️ Siang</span>;
+      return <span className="badge badge-morning">Pagi</span>;
     }
     if (session === 'special') {
-      return <span className="badge" style={{ background: '#ffe4e6', color: '#be123c', border: '1px solid #fecdd3' }}>⚠️ Khusus</span>;
+      return <span className="badge" style={{ background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca' }}>Insidentil</span>;
     }
-    return <span className="badge badge-evening">🌙 Sore</span>;
+    return <span className="badge badge-evening">Sore</span>;
   }
 
   return (
@@ -98,7 +95,7 @@ export default function AdminReportsPage() {
           className="btn btn-primary"
           onClick={handleExportCSV}
         >
-          📥 Export CSV
+          Export CSV
         </button>
       </div>
 
@@ -126,21 +123,21 @@ export default function AdminReportsPage() {
             />
           </div>
           <div className="filter-group">
-            <label className="filter-label" htmlFor="filter-employee">Karyawan</label>
+            <label className="filter-label" htmlFor="filter-employee">Petugas</label>
             <select
               id="filter-employee"
               className="form-select"
               value={employeeId}
               onChange={e => setEmployeeId(e.target.value)}
             >
-              <option value="">Semua Karyawan</option>
+              <option value="">Semua Petugas</option>
               {employees.map(emp => (
                 <option key={emp.id} value={emp.id}>{emp.name}</option>
               ))}
             </select>
           </div>
           <div className="filter-group">
-            <label className="filter-label" htmlFor="filter-location">Lokasi KHDTK</label>
+            <label className="filter-label" htmlFor="filter-location">Lokasi Penugasan</label>
             <select
               id="filter-location"
               className="form-select"
@@ -154,7 +151,7 @@ export default function AdminReportsPage() {
             </select>
           </div>
           <div className="filter-group">
-            <label className="filter-label" htmlFor="filter-session">Sesi</label>
+            <label className="filter-label" htmlFor="filter-session">Sesi Presensi</label>
             <select
               id="filter-session"
               className="form-select"
@@ -162,13 +159,13 @@ export default function AdminReportsPage() {
               onChange={e => setSessionType(e.target.value)}
             >
               <option value="">Semua Sesi</option>
-              <option value="morning">☀️ Pagi (06.00 - 08.00)</option>
-              <option value="evening">🌙 Sore (16.00 - 23.59)</option>
-              <option value="special">⚠️ Kejadian Khusus (24 Jam)</option>
+              <option value="morning">Pagi (06.00 – 08.00)</option>
+              <option value="evening">Sore (16.00 – 23.59)</option>
+              <option value="special">Insidentil (24 Jam)</option>
             </select>
           </div>
           <div className="filter-actions">
-            <button id="btn-apply-filter" type="submit" className="btn btn-primary">Filter</button>
+            <button id="btn-apply-filter" type="submit" className="btn btn-primary">Terapkan</button>
             <button id="btn-reset-filter" type="button" className="btn btn-secondary" onClick={handleReset}>Reset</button>
           </div>
         </div>

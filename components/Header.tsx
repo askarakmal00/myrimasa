@@ -41,7 +41,10 @@ export default function Header({ profile }: HeaderProps) {
               title="Panduan Penggunaan"
               aria-label="Buka panduan penggunaan"
             >
-              <span style={{ fontSize: '15px' }}>📖</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+              </svg>
               <span className="header-text-label">Panduan</span>
             </Link>
 
@@ -54,26 +57,29 @@ export default function Header({ profile }: HeaderProps) {
               title="Ganti Password Akun"
               aria-label="Ganti password akun"
             >
-              <span style={{ fontSize: '15px' }}>🔑</span>
-              <span className="header-text-label">Password</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+              <span className="header-text-label">Sandi</span>
             </button>
 
-            {/* User Profile Badge (Clickable to change password) */}
+            {/* User Profile Badge */}
             <div
               className="main-header-user-badge"
               onClick={() => setShowPasswordModal(true)}
-              title={`Klik untuk ganti password (${profile.name})`}
+              title={`Ganti kata sandi akun (${profile.name})`}
               style={{ cursor: 'pointer' }}
             >
               <div className="main-header-avatar">
-                {profile.name?.charAt(0)?.toUpperCase() || '?'}
+                {profile.name?.charAt(0)?.toUpperCase() || 'U'}
               </div>
               <div className="main-header-user-info">
                 <div className="main-header-user-name">
                   {profile.name}
                 </div>
                 <div className="main-header-user-role">
-                  {profile.role === 'admin' ? 'Admin' : 'Staff'}
+                  {profile.role === 'admin' ? 'Administrator' : 'Petugas Lapangan'}
                 </div>
               </div>
             </div>
@@ -88,9 +94,13 @@ export default function Header({ profile }: HeaderProps) {
               className="main-header-logout-btn"
             >
               {signingOut ? (
-                <span className="spinner" style={{ width: '12px', height: '12px', borderColor: '#cbd5e1', borderTopColor: '#64748b' }} />
+                <span className="spinner" style={{ width: '11px', height: '11px', borderColor: '#cbd5e1', borderTopColor: '#64748b' }} />
               ) : (
-                <span style={{ fontSize: '13px' }}>↪</span>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
               )}
               <span className="header-logout-text">Keluar</span>
             </button>

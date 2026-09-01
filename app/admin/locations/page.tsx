@@ -14,8 +14,10 @@ export default async function AdminLocationsPage() {
   return (
     <div>
       <div className="page-header">
-        <h1 className="page-title">Lokasi KHDTK</h1>
-        <p className="page-subtitle">{locations?.length || 0} lokasi terdaftar</p>
+        <div>
+          <h1 className="page-title">Master Lokasi Penugasan</h1>
+          <p className="page-subtitle">{locations?.length || 0} lokasi terdaftar</p>
+        </div>
       </div>
 
       <div className="table-wrapper">
@@ -36,7 +38,7 @@ export default async function AdminLocationsPage() {
                 <tr key={loc.id}>
                   <td>
                     <div style={{ fontWeight: '600', fontSize: '13px' }}>
-                      📍 {loc.name}
+                      {loc.name}
                     </div>
                   </td>
                   <td className="muted truncate" style={{ maxWidth: '200px', fontSize: '12px' }}>
@@ -45,8 +47,8 @@ export default async function AdminLocationsPage() {
                   <td className="muted" style={{ fontSize: '12px' }}>{loc.latitude ?? '—'}</td>
                   <td className="muted" style={{ fontSize: '12px' }}>{loc.longitude ?? '—'}</td>
                   <td>
-                    <span className={`badge ${loc.active ? 'badge-submitted' : 'badge-missed'}`}>
-                      {loc.active ? '✅ Aktif' : '❌ Nonaktif'}
+                    <span className={`badge ${loc.active ? 'badge-morning' : 'badge-evening'}`}>
+                      {loc.active ? 'Aktif' : 'Nonaktif'}
                     </span>
                   </td>
                   <td className="muted" style={{ fontSize: '12px' }}>
@@ -56,8 +58,8 @@ export default async function AdminLocationsPage() {
               ))
             ) : (
               <tr>
-                <td colSpan={6} className="text-center muted" style={{ padding: '40px' }}>
-                  Belum ada lokasi terdaftar
+                <td colSpan={6} className="text-center muted" style={{ padding: '36px', textAlign: 'center' }}>
+                  Belum ada lokasi terdaftar.
                 </td>
               </tr>
             )}
@@ -65,9 +67,8 @@ export default async function AdminLocationsPage() {
         </table>
       </div>
 
-      <div className="alert alert-warning" style={{ marginTop: '16px' }}>
-        <span>ℹ️</span>
-        <span>Untuk menambah atau mengubah lokasi, silahkan edit langsung di Supabase dashboard atau melalui SQL migration.</span>
+      <div className="alert alert-info" style={{ marginTop: '16px' }}>
+        Untuk penambahan lokasi baru atau pembaruan koordinat wilayah KHDTK, hubungi administrator database.
       </div>
     </div>
   );

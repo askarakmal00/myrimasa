@@ -58,14 +58,14 @@ export default function NavigationProgressBar() {
 
   return (
     <>
-      {/* Top Gradient Progress Bar */}
+      {/* Top Progress Bar */}
       <div
         style={{
           position: 'fixed',
           top: 0,
           left: 0,
           right: 0,
-          height: '3.5px',
+          height: '2px',
           zIndex: 999999,
           pointerEvents: 'none',
         }}
@@ -74,11 +74,9 @@ export default function NavigationProgressBar() {
           style={{
             height: '100%',
             width: `${progress}%`,
-            background: 'linear-gradient(90deg, #166534 0%, #4ade80 50%, #e11d48 100%)',
-            boxShadow: '0 0 12px rgba(74, 222, 128, 0.7), 0 0 4px rgba(225, 29, 72, 0.5)',
+            background: 'var(--color-primary)',
             transition: 'width 0.25s ease-out, opacity 0.25s ease-out',
             opacity: progress === 100 ? 0 : 1,
-            borderRadius: '0 4px 4px 0',
           }}
         />
       </div>
