@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
 import { getProfile } from '@/lib/auth';
 import { createAdminClient } from '@/lib/supabase';
-import Papa from 'papaparse';
+import * as XLSX from 'xlsx';
 import { formatWibTime, formatWibDate } from '@/lib/time';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
   try {
@@ -45,47 +47,74 @@ export async function GET(request: Request) {
       special: 'Kejadian Khusus (24 Jam)',
     };
 
-    // Transform to CSV format (like Google Forms Response)
-    const csvData = (data || []).map((r: any) => {
+    // Transform to Excel data array
+    const excelRows = (data || []).map((r: any, idx: number) => {
       const fileUrls = (r.report_files || [])
         .map((f: any) => f.drive_url)
         .filter(Boolean)
         .join(' | ');
 
       return {
-        'Timestamp': r.timestamp ? `${formatWibDate(r.timestamp)} ${formatWibTime(r.timestamp)}` : '',
-        'Nama Lengkap': r.profiles?.name || '',
+        'No': idx + 1,
+        'Timestamp (WIB)': r.timestamp ? `${formatWibDate(r.timestamp)} ${formatWibTime(r.timestamp)}` : '',
+        'Nama Petugas': r.profiles?.name || '',
         'Lokasi KHDTK': r.locations?.name || '',
-        'Email Address': r.profiles?.email || '',
-        'Foto/video di lokasi': fileUrls,
-        'Kegiatan Rutin yang dilaksanakan': r.routine_activity || '',
-        'Kegiatan Insidentil yang dilaksanakan': r.incident_activity || '',
-        'Hasil Kondisi di lapangan': r.field_condition || '',
-        'Tindak Lanjut/Usulan': r.follow_up || '',
-        'Session': sessionLabels[r.session_type] || r.session_type,
-        'Latitude': r.latitude || '',
-        'Longitude': r.longitude || '',
-        'GeoAddress': r.address || '',
-        'Google Maps URL': r.maps_url || '',
+        'Email Petugas': r.profiles?.email || '',
+        'Sesi': sessionLabels[r.session_type] || r.session_type,
+        'Foto/Dokumentasi Lapangan': fileUrls || '—',
+        'Kegiatan Rutin': r.routine_activity || '',
+        'Kegiatan Insidentil': r.incident_activity || '',
+        'Kondisi Lapangan': r.field_condition || '',
+        'Tindak Lanjut / Usulan': r.follow_up || '',
+        'Latitude': r.latitude ?? '',
+        'Longitude': r.longitude ?? '',
+        'Alamat Terdeteksi': r.address || '',
+        'Link Google Maps': r.maps_url || '',
       };
     });
 
-    const csv = Papa.unparse(csvData, {
-      quotes: true,
-      delimiter: ',',
-    });
+    // Create Worksheet & Workbook
+    const worksheet = XLSX.utils.json_to_sheet(excelRows);
+
+    // Set Column Widths for readability
+    worksheet['!cols'] = [
+      { wch: 5 },  // No
+      { wch: 22 }, // Timestamp
+      { wch: 24 }, // Nama Petugas
+      { wch: 20 }, // Lokasi KHDTK
+      { wch: 26 }, // Email
+      { wch: 22 }, // Sesi
+      { wch: 45 }, // Foto URLs
+      { wch: 35 }, // Kegiatan Rutin
+      { wch: 25 }, // Kegiatan Insidentil
+      { wch: 35 }, // Kondisi Lapangan
+      { wch: 35 }, // Tindak Lanjut
+      { wch: 14 }, // Latitude
+      { wch: 14 }, // Longitude
+      { wch: 30 }, // Alamat
+      { wch: 35 }, // Google Maps URL
+    ];
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Laporan Presensi');
+
+    // Generate Excel Buffer (.xlsx)
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'buffer' });
 
     const now = new Date();
-    const filename = `myrimasa_export_${now.toISOString().split('T')[0]}.csv`;
+    const dateStr = now.toISOString().split('T')[0];
+    const filename = `myrimasa_laporan_presensi_${dateStr}.xlsx`;
 
-    return new NextResponse(csv, {
+    return new NextResponse(excelBuffer, {
+      status: 200,
       headers: {
-        'Content-Type': 'text/csv; charset=utf-8',
+        'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         'Content-Disposition': `attachment; filename="${filename}"`,
+        'Cache-Control': 'no-store, max-age=0',
       },
     });
   } catch (error) {
     console.error('Export error:', error);
-    return NextResponse.json({ error: 'Terjadi kesalahan server' }, { status: 500 });
+    return NextResponse.json({ error: 'Terjadi kesalahan server saat export excel' }, { status: 500 });
   }
 }
