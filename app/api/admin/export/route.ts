@@ -66,41 +66,13 @@ function getPresensiLabel(sessionType: string): string {
   return getSessionLabel(sessionType);
 }
 
-// --- Helper: convert Google Drive view URL to direct image URL ---
+// --- Helper: convert Google Drive view URL to direct shareable link ---
 function toDriveDirectUrl(url: string): string {
   const viewMatch = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
   if (viewMatch) {
     return `https://drive.google.com/uc?export=view&id=${viewMatch[1]}`;
   }
   return url;
-}
-
-// --- Helper: fetch image buffer from URL ---
-async function fetchImageBuffer(url: string): Promise<{ buffer: Buffer; ext: string } | null> {
-  try {
-    const directUrl = toDriveDirectUrl(url);
-    const res = await fetch(directUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0',
-        Accept: 'image/*,*/*',
-      },
-      redirect: 'follow',
-      signal: AbortSignal.timeout(8000),
-    });
-
-    if (!res.ok) return null;
-
-    const contentType = res.headers.get('content-type') || '';
-    let ext = 'jpeg';
-    if (contentType.includes('png')) ext = 'png';
-    else if (contentType.includes('gif')) ext = 'gif';
-    else if (contentType.includes('webp')) ext = 'png'; // ExcelJS fallback
-
-    const arrayBuffer = await res.arrayBuffer();
-    return { buffer: Buffer.from(arrayBuffer), ext };
-  } catch {
-    return null;
-  }
 }
 
 export async function GET(request: Request) {
@@ -264,36 +236,16 @@ export async function GET(request: Request) {
         cell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: false };
       });
 
-      // For each photo URL (up to 5), try to embed image
+      // For each photo URL (up to 5), write as clickable hyperlink
       for (let p = 0; p < photoUrls.length; p++) {
         const url = photoUrls[p];
-        const colIndex = 5 + p; // column E=5, F=6, G=7, H=8, I=9 (1-indexed)
+        const colIndex = 5 + p; // E=5, F=6, G=7, H=8, I=9 (1-indexed)
+        const directUrl = toDriveDirectUrl(url);
 
-        const imgResult = await fetchImageBuffer(url);
-
-        if (imgResult) {
-          const imageId = workbook.addImage({
-            buffer: imgResult.buffer,
-            extension: imgResult.ext as 'jpeg' | 'png' | 'gif',
-          });
-
-          // Place image inside cell — tl = top-left corner, br = bottom-right corner
-          sheetRekap.addImage(imageId, {
-            tl: { col: colIndex - 1, row: excelRowIndex - 1 }, // 0-indexed
-            br: { col: colIndex, row: excelRowIndex },          // 0-indexed exclusive
-            editAs: 'oneCell',
-          });
-
-          // Also write the URL as hyperlink in the cell for clickability
-          const cell = sheetRekap.getCell(excelRowIndex, colIndex);
-          cell.value = { text: '', hyperlink: url };
-        } else {
-          // Fallback: write placeholder text + hyperlink
-          const cell = sheetRekap.getCell(excelRowIndex, colIndex);
-          cell.value = { text: 'Foto tidak dapat dimuat', hyperlink: url };
-          cell.font = { color: { argb: 'FF9E9E9E' }, italic: true, size: 9 };
-          cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
-        }
+        const cell = sheetRekap.getCell(excelRowIndex, colIndex);
+        cell.value = { text: `Lihat Foto ${p + 1}`, hyperlink: directUrl };
+        cell.font = { color: { argb: 'FF1565C0' }, underline: true, size: 10 };
+        cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: false };
       }
     }
 
