@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getProfile } from '@/lib/auth';
 import { createAdminClient } from '@/lib/supabase';
 import ExcelJS from 'exceljs';
-import { formatWibTime, formatWibDate } from '@/lib/time';
+
 
 
 export const dynamic = 'force-dynamic';
@@ -17,6 +17,43 @@ const sessionLabels: Record<string, string> = {
 
 function getSessionLabel(sessionType: string): string {
   return sessionLabels[sessionType] || sessionType;
+}
+
+// --- Helper: extract Hari, Tanggal, Jam in WIB ---
+function parseWibParts(timestamp: string | null): { hari: string; tanggal: string; jam: string } {
+  if (!timestamp) return { hari: '', tanggal: '', jam: '' };
+
+  const isoDate = new Date(timestamp);
+  if (!isNaN(isoDate.getTime())) {
+    const wib = new Date(isoDate.getTime() + 7 * 60 * 60 * 1000);
+    const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    const months = [
+      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+    const hari = days[wib.getUTCDay()];
+    const day = wib.getUTCDate();
+    const month = months[wib.getUTCMonth()];
+    const year = wib.getUTCFullYear();
+    const hh = String(wib.getUTCHours()).padStart(2, '0');
+    const min = String(wib.getUTCMinutes()).padStart(2, '0');
+    return {
+      hari,
+      tanggal: `${day} ${month} ${year}`,
+      jam: `${hh}:${min}`,
+    };
+  }
+
+  const match = timestamp.match(/(?:(\w+),\s*)?(\d{1,2}\s+\w+\s+\d{4})\s+(\d{2}:\d{2})/);
+  if (match) {
+    return {
+      hari: match[1] || '',
+      tanggal: match[2] || '',
+      jam: match[3] || '',
+    };
+  }
+
+  return { hari: '', tanggal: '', jam: '' };
 }
 
 // --- Helper: extract Tanggal and Jam from WIB timestamp string ---
@@ -134,8 +171,9 @@ export async function GET(request: Request) {
 
     sheetLaporan.columns = [
       { header: 'No', key: 'no', width: 6 },
-      { header: 'Tanggal', key: 'tanggal', width: 28 },
-      { header: 'Waktu', key: 'waktu', width: 12 },
+      { header: 'Hari', key: 'hari', width: 14 },
+      { header: 'Tanggal', key: 'tanggal', width: 22 },
+      { header: 'Jam', key: 'jam', width: 12 },
       { header: 'Nama Petugas', key: 'nama', width: 26 },
       { header: 'Lokasi KHDTK', key: 'lokasi', width: 22 },
       { header: 'Email Petugas', key: 'email', width: 28 },
@@ -165,10 +203,13 @@ export async function GET(request: Request) {
         .filter(Boolean)
         .join(' | ');
 
+      const { hari, tanggal, jam } = parseWibParts(r.timestamp);
+
       sheetLaporan.addRow({
         no: idx + 1,
-        tanggal: r.timestamp ? formatWibDate(r.timestamp) : '',
-        waktu: r.timestamp ? formatWibTime(r.timestamp) : '',
+        hari,
+        tanggal,
+        jam,
         nama: r.profiles?.name || '',
         lokasi: r.locations?.name || '',
         email: r.profiles?.email || '',
