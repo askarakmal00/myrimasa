@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase';
 import ExcelJS from 'exceljs';
 import { formatWibTime, formatWibDate } from '@/lib/time';
 
+
 export const dynamic = 'force-dynamic';
 
 // --- Helper: parse session label ---
@@ -66,10 +67,9 @@ function getPresensiLabel(sessionType: string): string {
   return getSessionLabel(sessionType);
 }
 
-// --- Helper: convert Google Drive URL → direct CDN image URL (no auth redirect) ---
-// drive.google.com/uc?export=view causes #BLOCKED! in Excel's =IMAGE() because
-// Google redirects through an auth/consent page. lh3.googleusercontent.com/d/FILE_ID
-// is the direct CDN link that serves the image binary without redirect.
+// --- Helper: convert Google Drive URL → image-friendly URL ---
+// Uses uc?export=view&id=FILE_ID format — confirmed by user that this shows images
+// when used with =IMAGE() in Excel (without the @ prefix issue).
 function toDriveDirectUrl(url: string): string {
   // Match any common Drive URL format and extract FILE_ID
   const fileIdMatch =
@@ -78,8 +78,7 @@ function toDriveDirectUrl(url: string): string {
     url.match(/drive\.google\.com\/uc\?.*id=([a-zA-Z0-9_-]+)/);
 
   if (fileIdMatch) {
-    // Direct CDN URL — no redirect, no auth page, works with Excel IMAGE()
-    return `https://lh3.googleusercontent.com/d/${fileIdMatch[1]}`;
+    return `https://drive.google.com/uc?export=view&id=${fileIdMatch[1]}`;
   }
   // Supabase / other public URLs: use as-is
   return url;
@@ -250,19 +249,16 @@ export async function GET(request: Request) {
         const url = photoUrls[p];
         const colIndex = 5 + p; // E=5, F=6, G=7, H=8, I=9 (1-indexed)
 
-        // Build the image-safe URL:
-        // - Google Drive: extract FILE_ID → use uc?export=view&id=FILE_ID
-        // - Supabase / other public URL: use as-is
+        // Build image URL from Drive or use Supabase directly
         const imageUrl = toDriveDirectUrl(url);
 
         const cell = sheetRekap.getCell(excelRowIndex, colIndex);
-        // _xlfn. prefix prevents ExcelJS from adding "@" before IMAGE (ExcelJS bug with unknown functions).
-        // Excel reads _xlfn.IMAGE() and displays it as IMAGE() — no #NAME? error.
-        cell.value = { formula: `=_xlfn.IMAGE("${imageUrl}",1)` };
+        // ExcelJS writes =IMAGE(...) correctly in XLSX XML without @ prefix.
+        // Verified via raw XML inspection: <f>=IMAGE("url",1)</f>
+        cell.value = { formula: `=IMAGE("${imageUrl}",1)` };
         cell.alignment = { vertical: 'middle', horizontal: 'center' };
       }
     }
-
 
     // Freeze header row Sheet 2
     sheetRekap.views = [{ state: 'frozen', ySplit: 1 }];
