@@ -66,12 +66,22 @@ function getPresensiLabel(sessionType: string): string {
   return getSessionLabel(sessionType);
 }
 
-// --- Helper: convert Google Drive view URL to direct shareable link ---
+// --- Helper: convert Google Drive URL → direct CDN image URL (no auth redirect) ---
+// drive.google.com/uc?export=view causes #BLOCKED! in Excel's =IMAGE() because
+// Google redirects through an auth/consent page. lh3.googleusercontent.com/d/FILE_ID
+// is the direct CDN link that serves the image binary without redirect.
 function toDriveDirectUrl(url: string): string {
-  const viewMatch = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
-  if (viewMatch) {
-    return `https://drive.google.com/uc?export=view&id=${viewMatch[1]}`;
+  // Match any common Drive URL format and extract FILE_ID
+  const fileIdMatch =
+    url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/) ||
+    url.match(/drive\.google\.com\/open\?id=([a-zA-Z0-9_-]+)/) ||
+    url.match(/drive\.google\.com\/uc\?.*id=([a-zA-Z0-9_-]+)/);
+
+  if (fileIdMatch) {
+    // Direct CDN URL — no redirect, no auth page, works with Excel IMAGE()
+    return `https://lh3.googleusercontent.com/d/${fileIdMatch[1]}`;
   }
+  // Supabase / other public URLs: use as-is
   return url;
 }
 
