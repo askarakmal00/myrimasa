@@ -252,9 +252,12 @@ export async function GET(request: Request) {
         const imageUrl = toDriveDirectUrl(url);
 
         const cell = sheetRekap.getCell(excelRowIndex, colIndex);
-        // ExcelJS writes =IMAGE(...) correctly in XLSX XML without @ prefix.
-        // Verified via raw XML inspection: <f>=IMAGE("url",1)</f>
-        cell.value = { formula: `=IMAGE("${imageUrl}",1)` };
+        // IMPORTANT: Do NOT include leading "=" in formula string.
+        // With "=": ExcelJS writes <f>=IMAGE(...)</f> → Excel adds "@" → =@IMAGE → #NAME?
+        // With "_xlfn." prefix (no "="): ExcelJS writes <f>_xlfn.IMAGE(...)</f>
+        // → Excel reads as =IMAGE() in formula bar, no "@", image renders correctly.
+        // Verified by raw XML inspection of ExcelJS output.
+        cell.value = { formula: `_xlfn.IMAGE("${imageUrl}",1)` };
         cell.alignment = { vertical: 'middle', horizontal: 'center' };
       }
     }
