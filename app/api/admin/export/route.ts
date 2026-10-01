@@ -134,7 +134,8 @@ export async function GET(request: Request) {
 
     sheetLaporan.columns = [
       { header: 'No', key: 'no', width: 6 },
-      { header: 'Timestamp (WIB)', key: 'timestamp', width: 26 },
+      { header: 'Tanggal', key: 'tanggal', width: 28 },
+      { header: 'Waktu', key: 'waktu', width: 12 },
       { header: 'Nama Petugas', key: 'nama', width: 26 },
       { header: 'Lokasi KHDTK', key: 'lokasi', width: 22 },
       { header: 'Email Petugas', key: 'email', width: 28 },
@@ -164,13 +165,10 @@ export async function GET(request: Request) {
         .filter(Boolean)
         .join(' | ');
 
-      const tsLabel = r.timestamp
-        ? `${formatWibDate(r.timestamp)} ${formatWibTime(r.timestamp)}`
-        : '';
-
       sheetLaporan.addRow({
         no: idx + 1,
-        timestamp: tsLabel,
+        tanggal: r.timestamp ? formatWibDate(r.timestamp) : '',
+        waktu: r.timestamp ? formatWibTime(r.timestamp) : '',
         nama: r.profiles?.name || '',
         lokasi: r.locations?.name || '',
         email: r.profiles?.email || '',
@@ -186,6 +184,7 @@ export async function GET(request: Request) {
         maps: r.maps_url || '',
       });
     });
+
 
     // Freeze header row Sheet 1
     sheetLaporan.views = [{ state: 'frozen', ySplit: 1 }];
