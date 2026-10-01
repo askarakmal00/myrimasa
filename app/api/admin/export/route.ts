@@ -190,12 +190,12 @@ export async function GET(request: Request) {
       { header: 'Nama', key: 'nama', width: 24 },
       { header: 'Tanggal', key: 'tanggal', width: 14 },
       { header: 'Jam', key: 'jam', width: 10 },
-      { header: 'Presensi', key: 'presensi', width: 12 },
-      { header: 'Foto 1', key: 'foto1', width: 22 },
-      { header: 'Foto 2', key: 'foto2', width: 22 },
-      { header: 'Foto 3', key: 'foto3', width: 22 },
-      { header: 'Foto 4', key: 'foto4', width: 22 },
-      { header: 'Foto 5', key: 'foto5', width: 22 },
+      { header: 'Presensi', key: 'presensi', width: 14 },
+      { header: 'Foto 1', key: 'foto1', width: 30 },
+      { header: 'Foto 2', key: 'foto2', width: 30 },
+      { header: 'Foto 3', key: 'foto3', width: 30 },
+      { header: 'Foto 4', key: 'foto4', width: 30 },
+      { header: 'Foto 5', key: 'foto5', width: 30 },
     ];
 
     // Style header row Sheet 2
@@ -206,9 +206,7 @@ export async function GET(request: Request) {
     });
     sheetRekap.getRow(1).height = 28;
 
-    const THUMB_W = 140; // pixels
-    const THUMB_H = 100; // pixels
-    const ROW_HEIGHT_PX = 110;
+    const ROW_HEIGHT = 100; // points — enough to show image thumbnails
 
     for (let i = 0; i < rows.length; i++) {
       const r = rows[i];
@@ -229,25 +227,31 @@ export async function GET(request: Request) {
         jam,
         presensi,
       });
-      dataRow.height = ROW_HEIGHT_PX * 0.75; // ExcelJS uses pt-like units
+      dataRow.height = ROW_HEIGHT;
 
-      // Style data cells
-      dataRow.eachCell({ includeEmpty: false }, (cell) => {
+      // Style non-photo data cells
+      [1, 2, 3, 4].forEach((col) => {
+        const cell = dataRow.getCell(col);
         cell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: false };
       });
 
-      // For each photo URL (up to 5), write as clickable hyperlink
+      // For each photo URL (up to 5), write =IMAGE() formula
       for (let p = 0; p < photoUrls.length; p++) {
         const url = photoUrls[p];
         const colIndex = 5 + p; // E=5, F=6, G=7, H=8, I=9 (1-indexed)
-        const directUrl = toDriveDirectUrl(url);
+
+        // Build the image-safe URL:
+        // - Google Drive: extract FILE_ID → use uc?export=view&id=FILE_ID
+        // - Supabase / other public URL: use as-is
+        const imageUrl = toDriveDirectUrl(url);
 
         const cell = sheetRekap.getCell(excelRowIndex, colIndex);
-        cell.value = { text: `Lihat Foto ${p + 1}`, hyperlink: directUrl };
-        cell.font = { color: { argb: 'FF1565C0' }, underline: true, size: 10 };
-        cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: false };
+        // =IMAGE("URL", 1) — mode 1 = fit inside cell maintaining aspect ratio
+        cell.value = { formula: `=IMAGE("${imageUrl}",1)` };
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
       }
     }
+
 
     // Freeze header row Sheet 2
     sheetRekap.views = [{ state: 'frozen', ySplit: 1 }];
