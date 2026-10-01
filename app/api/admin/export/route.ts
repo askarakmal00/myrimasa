@@ -1,10 +1,107 @@
 import { NextResponse } from 'next/server';
 import { getProfile } from '@/lib/auth';
 import { createAdminClient } from '@/lib/supabase';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import { formatWibTime, formatWibDate } from '@/lib/time';
 
 export const dynamic = 'force-dynamic';
+
+// --- Helper: parse session label ---
+const sessionLabels: Record<string, string> = {
+  morning: 'Pagi (06.00-08.00)',
+  afternoon: 'Siang (13.00-14.00)',
+  evening: 'Sore (16.00-23.59)',
+  special: 'Kejadian Khusus (24 Jam)',
+};
+
+function getSessionLabel(sessionType: string): string {
+  return sessionLabels[sessionType] || sessionType;
+}
+
+// --- Helper: extract Tanggal and Jam from WIB timestamp string ---
+// Input e.g. "Rabu, 30 September 2026 07:34 WIB" or ISO string
+function parseTanggalJam(timestamp: string | null): { tanggal: string; jam: string } {
+  if (!timestamp) return { tanggal: '', jam: '' };
+
+  // Try ISO datetime first (from DB)
+  const isoDate = new Date(timestamp);
+  if (!isNaN(isoDate.getTime())) {
+    // Convert to WIB (UTC+7)
+    const wib = new Date(isoDate.getTime() + 7 * 60 * 60 * 1000);
+    const dd = String(wib.getUTCDate()).padStart(2, '0');
+    const mm = String(wib.getUTCMonth() + 1).padStart(2, '0');
+    const yyyy = wib.getUTCFullYear();
+    const hh = String(wib.getUTCHours()).padStart(2, '0');
+    const min = String(wib.getUTCMinutes()).padStart(2, '0');
+    return { tanggal: `${dd}/${mm}/${yyyy}`, jam: `${hh}:${min}` };
+  }
+
+  // Fallback: already a WIB string like "Rabu, 30 September 2026 07:34 WIB"
+  const match = timestamp.match(/(\d{1,2})\s+\w+\s+(\d{4})\s+(\d{2}:\d{2})/);
+  if (match) {
+    const day = String(match[1]).padStart(2, '0');
+    const year = match[2];
+    const time = match[3];
+    // Extract month from string
+    const monthMap: Record<string, string> = {
+      Januari: '01', Februari: '02', Maret: '03', April: '04',
+      Mei: '05', Juni: '06', Juli: '07', Agustus: '08',
+      September: '09', Oktober: '10', November: '11', Desember: '12',
+    };
+    const monthName = timestamp.match(/\d{1,2}\s+(\w+)\s+\d{4}/)?.[1] || '';
+    const monthNum = monthMap[monthName] || '??';
+    return { tanggal: `${day}/${monthNum}/${year}`, jam: time };
+  }
+
+  return { tanggal: '', jam: '' };
+}
+
+// --- Helper: extract Pagi/Sore label from session type ---
+function getPresensiLabel(sessionType: string): string {
+  const label = getSessionLabel(sessionType).toLowerCase();
+  if (label.includes('pagi')) return 'Pagi';
+  if (label.includes('siang')) return 'Siang';
+  if (label.includes('sore')) return 'Sore';
+  if (label.includes('khusus') || label.includes('special')) return 'Khusus';
+  return getSessionLabel(sessionType);
+}
+
+// --- Helper: convert Google Drive view URL to direct image URL ---
+function toDriveDirectUrl(url: string): string {
+  const viewMatch = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (viewMatch) {
+    return `https://drive.google.com/uc?export=view&id=${viewMatch[1]}`;
+  }
+  return url;
+}
+
+// --- Helper: fetch image buffer from URL ---
+async function fetchImageBuffer(url: string): Promise<{ buffer: Buffer; ext: string } | null> {
+  try {
+    const directUrl = toDriveDirectUrl(url);
+    const res = await fetch(directUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0',
+        Accept: 'image/*,*/*',
+      },
+      redirect: 'follow',
+      signal: AbortSignal.timeout(8000),
+    });
+
+    if (!res.ok) return null;
+
+    const contentType = res.headers.get('content-type') || '';
+    let ext = 'jpeg';
+    if (contentType.includes('png')) ext = 'png';
+    else if (contentType.includes('gif')) ext = 'gif';
+    else if (contentType.includes('webp')) ext = 'png'; // ExcelJS fallback
+
+    const arrayBuffer = await res.arrayBuffer();
+    return { buffer: Buffer.from(arrayBuffer), ext };
+  } catch {
+    return null;
+  }
+}
 
 export async function GET(request: Request) {
   try {
@@ -40,72 +137,179 @@ export async function GET(request: Request) {
     const { data, error } = await query;
     if (error) return NextResponse.json({ error: 'Gagal memuat data' }, { status: 500 });
 
-    const sessionLabels: Record<string, string> = {
-      morning: 'Pagi (06.00-08.00)',
-      afternoon: 'Siang (13.00-14.00)',
-      evening: 'Sore (16.00-23.59)',
-      special: 'Kejadian Khusus (24 Jam)',
-    };
+    const rows = data || [];
 
-    // Transform to Excel data array
-    const excelRows = (data || []).map((r: any, idx: number) => {
+    // ============================================================
+    // Build ExcelJS Workbook
+    // ============================================================
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'MyRimasa';
+    workbook.created = new Date();
+
+    // ============================================================
+    // SHEET 1: Laporan Presensi (sama persis seperti sebelumnya)
+    // ============================================================
+    const sheetLaporan = workbook.addWorksheet('Laporan Presensi');
+
+    sheetLaporan.columns = [
+      { header: 'No', key: 'no', width: 6 },
+      { header: 'Timestamp (WIB)', key: 'timestamp', width: 26 },
+      { header: 'Nama Petugas', key: 'nama', width: 26 },
+      { header: 'Lokasi KHDTK', key: 'lokasi', width: 22 },
+      { header: 'Email Petugas', key: 'email', width: 28 },
+      { header: 'Sesi', key: 'sesi', width: 24 },
+      { header: 'Foto/Dokumentasi Lapangan', key: 'foto', width: 48 },
+      { header: 'Kegiatan Rutin', key: 'rutin', width: 36 },
+      { header: 'Kegiatan Insidentil', key: 'insidentil', width: 26 },
+      { header: 'Kondisi Lapangan', key: 'kondisi', width: 36 },
+      { header: 'Tindak Lanjut / Usulan', key: 'tindak', width: 36 },
+      { header: 'Latitude', key: 'lat', width: 16 },
+      { header: 'Longitude', key: 'lng', width: 16 },
+      { header: 'Alamat Terdeteksi', key: 'alamat', width: 32 },
+      { header: 'Link Google Maps', key: 'maps', width: 36 },
+    ];
+
+    // Style header row Sheet 1
+    sheetLaporan.getRow(1).eachCell((cell) => {
+      cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2E7D32' } };
+      cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+    });
+    sheetLaporan.getRow(1).height = 28;
+
+    rows.forEach((r: any, idx: number) => {
       const fileUrls = (r.report_files || [])
         .map((f: any) => f.drive_url)
         .filter(Boolean)
         .join(' | ');
 
-      return {
-        'No': idx + 1,
-        'Timestamp (WIB)': r.timestamp ? `${formatWibDate(r.timestamp)} ${formatWibTime(r.timestamp)}` : '',
-        'Nama Petugas': r.profiles?.name || '',
-        'Lokasi KHDTK': r.locations?.name || '',
-        'Email Petugas': r.profiles?.email || '',
-        'Sesi': sessionLabels[r.session_type] || r.session_type,
-        'Foto/Dokumentasi Lapangan': fileUrls || '—',
-        'Kegiatan Rutin': r.routine_activity || '',
-        'Kegiatan Insidentil': r.incident_activity || '',
-        'Kondisi Lapangan': r.field_condition || '',
-        'Tindak Lanjut / Usulan': r.follow_up || '',
-        'Latitude': r.latitude ?? '',
-        'Longitude': r.longitude ?? '',
-        'Alamat Terdeteksi': r.address || '',
-        'Link Google Maps': r.maps_url || '',
-      };
+      const tsLabel = r.timestamp
+        ? `${formatWibDate(r.timestamp)} ${formatWibTime(r.timestamp)}`
+        : '';
+
+      sheetLaporan.addRow({
+        no: idx + 1,
+        timestamp: tsLabel,
+        nama: r.profiles?.name || '',
+        lokasi: r.locations?.name || '',
+        email: r.profiles?.email || '',
+        sesi: getSessionLabel(r.session_type),
+        foto: fileUrls || '—',
+        rutin: r.routine_activity || '',
+        insidentil: r.incident_activity || '',
+        kondisi: r.field_condition || '',
+        tindak: r.follow_up || '',
+        lat: r.latitude ?? '',
+        lng: r.longitude ?? '',
+        alamat: r.address || '',
+        maps: r.maps_url || '',
+      });
     });
 
-    // Create Worksheet & Workbook
-    const worksheet = XLSX.utils.json_to_sheet(excelRows);
+    // Freeze header row Sheet 1
+    sheetLaporan.views = [{ state: 'frozen', ySplit: 1 }];
 
-    // Set Column Widths for readability
-    worksheet['!cols'] = [
-      { wch: 5 },  // No
-      { wch: 22 }, // Timestamp
-      { wch: 24 }, // Nama Petugas
-      { wch: 20 }, // Lokasi KHDTK
-      { wch: 26 }, // Email
-      { wch: 22 }, // Sesi
-      { wch: 45 }, // Foto URLs
-      { wch: 35 }, // Kegiatan Rutin
-      { wch: 25 }, // Kegiatan Insidentil
-      { wch: 35 }, // Kondisi Lapangan
-      { wch: 35 }, // Tindak Lanjut
-      { wch: 14 }, // Latitude
-      { wch: 14 }, // Longitude
-      { wch: 30 }, // Alamat
-      { wch: 35 }, // Google Maps URL
+    // ============================================================
+    // SHEET 2: Rekap Foto — DERIVED from Sheet 1 data
+    // ============================================================
+    const sheetRekap = workbook.addWorksheet('Rekap Foto');
+
+    sheetRekap.columns = [
+      { header: 'Nama', key: 'nama', width: 24 },
+      { header: 'Tanggal', key: 'tanggal', width: 14 },
+      { header: 'Jam', key: 'jam', width: 10 },
+      { header: 'Presensi', key: 'presensi', width: 12 },
+      { header: 'Foto 1', key: 'foto1', width: 22 },
+      { header: 'Foto 2', key: 'foto2', width: 22 },
+      { header: 'Foto 3', key: 'foto3', width: 22 },
+      { header: 'Foto 4', key: 'foto4', width: 22 },
+      { header: 'Foto 5', key: 'foto5', width: 22 },
     ];
 
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Laporan Presensi');
+    // Style header row Sheet 2
+    sheetRekap.getRow(1).eachCell((cell) => {
+      cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1565C0' } };
+      cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+    });
+    sheetRekap.getRow(1).height = 28;
 
-    // Generate Excel Buffer (.xlsx)
-    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'buffer' });
+    const THUMB_W = 140; // pixels
+    const THUMB_H = 100; // pixels
+    const ROW_HEIGHT_PX = 110;
+
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i];
+      const excelRowIndex = i + 2; // 1-indexed, header is row 1
+
+      const { tanggal, jam } = parseTanggalJam(r.timestamp);
+      const presensi = getPresensiLabel(r.session_type);
+
+      const photoUrls: string[] = (r.report_files || [])
+        .map((f: any) => f.drive_url)
+        .filter(Boolean)
+        .slice(0, 5);
+
+      // Add base row data (Nama, Tanggal, Jam, Presensi)
+      const dataRow = sheetRekap.addRow({
+        nama: r.profiles?.name || '',
+        tanggal,
+        jam,
+        presensi,
+      });
+      dataRow.height = ROW_HEIGHT_PX * 0.75; // ExcelJS uses pt-like units
+
+      // Style data cells
+      dataRow.eachCell({ includeEmpty: false }, (cell) => {
+        cell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: false };
+      });
+
+      // For each photo URL (up to 5), try to embed image
+      for (let p = 0; p < photoUrls.length; p++) {
+        const url = photoUrls[p];
+        const colIndex = 5 + p; // column E=5, F=6, G=7, H=8, I=9 (1-indexed)
+
+        const imgResult = await fetchImageBuffer(url);
+
+        if (imgResult) {
+          const imageId = workbook.addImage({
+            buffer: imgResult.buffer,
+            extension: imgResult.ext as 'jpeg' | 'png' | 'gif',
+          });
+
+          // Place image inside cell — tl = top-left corner, br = bottom-right corner
+          sheetRekap.addImage(imageId, {
+            tl: { col: colIndex - 1, row: excelRowIndex - 1 }, // 0-indexed
+            br: { col: colIndex, row: excelRowIndex },          // 0-indexed exclusive
+            editAs: 'oneCell',
+          });
+
+          // Also write the URL as hyperlink in the cell for clickability
+          const cell = sheetRekap.getCell(excelRowIndex, colIndex);
+          cell.value = { text: '', hyperlink: url };
+        } else {
+          // Fallback: write placeholder text + hyperlink
+          const cell = sheetRekap.getCell(excelRowIndex, colIndex);
+          cell.value = { text: 'Foto tidak dapat dimuat', hyperlink: url };
+          cell.font = { color: { argb: 'FF9E9E9E' }, italic: true, size: 9 };
+          cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+        }
+      }
+    }
+
+    // Freeze header row Sheet 2
+    sheetRekap.views = [{ state: 'frozen', ySplit: 1 }];
+
+    // ============================================================
+    // Serialize & Return
+    // ============================================================
+    const excelBuffer = await workbook.xlsx.writeBuffer();
 
     const now = new Date();
     const dateStr = now.toISOString().split('T')[0];
     const filename = `myrimasa_laporan_presensi_${dateStr}.xlsx`;
 
-    return new NextResponse(excelBuffer, {
+    return new NextResponse(excelBuffer as Buffer, {
       status: 200,
       headers: {
         'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
