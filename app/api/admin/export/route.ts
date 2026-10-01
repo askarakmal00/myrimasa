@@ -246,8 +246,9 @@ export async function GET(request: Request) {
         const imageUrl = toDriveDirectUrl(url);
 
         const cell = sheetRekap.getCell(excelRowIndex, colIndex);
-        // =IMAGE("URL", 1) — mode 1 = fit inside cell maintaining aspect ratio
-        cell.value = { formula: `=IMAGE("${imageUrl}",1)` };
+        // _xlfn. prefix prevents ExcelJS from adding "@" before IMAGE (ExcelJS bug with unknown functions).
+        // Excel reads _xlfn.IMAGE() and displays it as IMAGE() — no #NAME? error.
+        cell.value = { formula: `=_xlfn.IMAGE("${imageUrl}",1)` };
         cell.alignment = { vertical: 'middle', horizontal: 'center' };
       }
     }
