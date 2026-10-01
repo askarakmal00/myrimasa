@@ -163,6 +163,8 @@ export async function GET(request: Request) {
     const workbook = new ExcelJS.Workbook();
     workbook.creator = 'MyRimasa';
     workbook.created = new Date();
+    workbook.calcProperties.fullCalcOnLoad = true;
+
 
     // ============================================================
     // SHEET 1: Laporan Presensi (sama persis seperti sebelumnya)

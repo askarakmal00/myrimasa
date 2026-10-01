@@ -84,6 +84,10 @@ export default function AdminSidebar({ profile }: AdminSidebarProps) {
 
           {/* Navigation links with clean SVG icons */}
           <nav className="admin-nav-container">
+            {/* Group 1: Presensi Operasional */}
+            <div style={{ fontSize: '10.5px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.6px', color: 'var(--color-text-muted)', padding: '12px 14px 4px' }}>
+              Operasional Presensi
+            </div>
             <ul className="admin-nav">
               <li className="admin-nav-item">
                 <Link
@@ -99,7 +103,7 @@ export default function AdminSidebar({ profile }: AdminSidebarProps) {
                       <rect x="3" y="14" width="7" height="7" />
                     </svg>
                   </span>
-                  <span>Dashboard</span>
+                  <span>Dashboard Presensi</span>
                 </Link>
               </li>
 
@@ -115,7 +119,6 @@ export default function AdminSidebar({ profile }: AdminSidebarProps) {
                       <polyline points="14 2 14 8 20 8" />
                       <line x1="16" y1="13" x2="8" y2="13" />
                       <line x1="16" y1="17" x2="8" y2="17" />
-                      <polyline points="10 9 9 9 8 9" />
                     </svg>
                   </span>
                   <span>Laporan Presensi</span>
@@ -124,19 +127,18 @@ export default function AdminSidebar({ profile }: AdminSidebarProps) {
 
               <li className="admin-nav-item">
                 <Link
-                  href="/admin/employees"
+                  href="/admin/rekap-dokumentasi"
                   onClick={() => setMobileOpen(false)}
-                  className={isActive('/admin/employees', false) ? 'active' : ''}
+                  className={isActive('/admin/rekap-dokumentasi', false) ? 'active' : ''}
                 >
                   <span className="admin-nav-icon">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                      <circle cx="9" cy="7" r="4" />
-                      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                      <circle cx="8.5" cy="8.5" r="1.5" />
+                      <polyline points="21 15 16 10 5 21" />
                     </svg>
                   </span>
-                  <span>Kelola Karyawan</span>
+                  <span>Rekap Dokumentasi</span>
                 </Link>
               </li>
 
@@ -153,6 +155,175 @@ export default function AdminSidebar({ profile }: AdminSidebarProps) {
                     </svg>
                   </span>
                   <span>Master Lokasi</span>
+                </Link>
+              </li>
+            </ul>
+
+            {/* Group 2: Kontrak & Klien */}
+            <div style={{ fontSize: '10.5px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.6px', color: 'var(--color-text-muted)', padding: '14px 14px 4px' }}>
+              Kontrak &amp; Klien
+            </div>
+            <ul className="admin-nav">
+              <li className="admin-nav-item">
+                <Link
+                  href="/admin/billing-dashboard"
+                  onClick={() => setMobileOpen(false)}
+                  className={isActive('/admin/billing-dashboard', true) ? 'active' : ''}
+                >
+                  <span className="admin-nav-icon">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="12" y1="1" x2="12" y2="23" />
+                      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                    </svg>
+                  </span>
+                  <span>Ringkasan Finansial</span>
+                </Link>
+              </li>
+
+              <li className="admin-nav-item">
+                <Link
+                  href="/admin/customers"
+                  onClick={() => setMobileOpen(false)}
+                  className={isActive('/admin/customers', false) ? 'active' : ''}
+                >
+                  <span className="admin-nav-icon">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M3 21h18" />
+                      <path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16" />
+                    </svg>
+                  </span>
+                  <span>Data Customer</span>
+                </Link>
+              </li>
+
+              <li className="admin-nav-item">
+                <Link
+                  href="/admin/contracts"
+                  onClick={() => setMobileOpen(false)}
+                  className={isActive('/admin/contracts', false) ? 'active' : ''}
+                >
+                  <span className="admin-nav-icon">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+                      <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+                    </svg>
+                  </span>
+                  <span>Kontrak &amp; SPK</span>
+                </Link>
+              </li>
+
+              <li className="admin-nav-item">
+                <Link
+                  href="/admin/billing-profiles"
+                  onClick={() => setMobileOpen(false)}
+                  className={isActive('/admin/billing-profiles', false) ? 'active' : ''}
+                >
+                  <span className="admin-nav-icon">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                      <circle cx="8.5" cy="7" r="4" />
+                      <line x1="20" y1="8" x2="20" y2="14" />
+                      <line x1="23" y1="11" x2="17" y2="11" />
+                    </svg>
+                  </span>
+                  <span>Penempatan &amp; Profile</span>
+                </Link>
+              </li>
+            </ul>
+
+            {/* Group 3: Billing & Keuangan */}
+            <div style={{ fontSize: '10.5px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.6px', color: 'var(--color-text-muted)', padding: '14px 14px 4px' }}>
+              Billing &amp; Keuangan
+            </div>
+            <ul className="admin-nav">
+              <li className="admin-nav-item">
+                <Link
+                  href="/admin/monthly-billing"
+                  onClick={() => setMobileOpen(false)}
+                  className={isActive('/admin/monthly-billing', false) ? 'active' : ''}
+                >
+                  <span className="admin-nav-icon">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                      <line x1="16" y1="2" x2="16" y2="6" />
+                      <line x1="8" y1="2" x2="8" y2="6" />
+                      <line x1="3" y1="10" x2="21" y2="10" />
+                    </svg>
+                  </span>
+                  <span>Billing &amp; Payroll</span>
+                </Link>
+              </li>
+
+              <li className="admin-nav-item">
+                <Link
+                  href="/admin/invoices"
+                  onClick={() => setMobileOpen(false)}
+                  className={isActive('/admin/invoices', false) ? 'active' : ''}
+                >
+                  <span className="admin-nav-icon">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1z" />
+                      <line x1="8" y1="8" x2="16" y2="8" />
+                      <line x1="8" y1="12" x2="16" y2="12" />
+                    </svg>
+                  </span>
+                  <span>Invoice Tagihan</span>
+                </Link>
+              </li>
+
+              <li className="admin-nav-item">
+                <Link
+                  href="/admin/talangan"
+                  onClick={() => setMobileOpen(false)}
+                  className={isActive('/admin/talangan', false) ? 'active' : ''}
+                >
+                  <span className="admin-nav-icon">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+                      <line x1="1" y1="10" x2="23" y2="10" />
+                    </svg>
+                  </span>
+                  <span>Talangan Modal</span>
+                </Link>
+              </li>
+
+              <li className="admin-nav-item">
+                <Link
+                  href="/admin/operational-expenses"
+                  onClick={() => setMobileOpen(false)}
+                  className={isActive('/admin/operational-expenses', false) ? 'active' : ''}
+                >
+                  <span className="admin-nav-icon">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="23 18 13.5 8.5 8.5 13.5 1 6" />
+                      <polyline points="17 18 23 18 23 12" />
+                    </svg>
+                  </span>
+                  <span>Biaya Operasional</span>
+                </Link>
+              </li>
+            </ul>
+
+            {/* Group 4: Pengaturan */}
+            <div style={{ fontSize: '10.5px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.6px', color: 'var(--color-text-muted)', padding: '14px 14px 4px' }}>
+              Pengaturan &amp; Bantuan
+            </div>
+            <ul className="admin-nav">
+              <li className="admin-nav-item">
+                <Link
+                  href="/admin/employees"
+                  onClick={() => setMobileOpen(false)}
+                  className={isActive('/admin/employees', false) ? 'active' : ''}
+                >
+                  <span className="admin-nav-icon">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                      <circle cx="9" cy="7" r="4" />
+                      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                    </svg>
+                  </span>
+                  <span>Kelola Karyawan</span>
                 </Link>
               </li>
 
