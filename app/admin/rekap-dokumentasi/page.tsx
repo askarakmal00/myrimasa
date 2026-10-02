@@ -129,17 +129,105 @@ export default function RekapDokumentasiPage() {
     }
   }
 
+  // Sort reports chronologically: Tanggal 1 dulu s/d akhir, dan Pagi dulu sebelum Sore
+  function sortReportsChronological<T extends { nama: string; tanggal: string; jam: string; presensi: string; rawDate?: string }>(rows: T[]): T[] {
+    const getSessionWeight = (s: string) => {
+      const lower = String(s || '').toLowerCase();
+      if (lower.includes('pagi') || lower === 'morning') return 1;
+      if (lower.includes('siang') || lower === 'afternoon') return 2;
+      if (lower.includes('sore') || lower === 'evening') return 3;
+      if (lower.includes('insidentil') || lower.includes('special') || lower.includes('khusus')) return 4;
+      return 5;
+    };
+
+    const parseComparableDate = (t: string) => {
+      if (!t) return '9999-99-99';
+      const str = String(t).trim();
+
+      // Check ISO or YYYY-MM-DD
+      const isoMatch = str.match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+      if (isoMatch) {
+        return `${isoMatch[1]}-${isoMatch[2].padStart(2, '0')}-${isoMatch[3].padStart(2, '0')}`;
+      }
+
+      // Check DD/MM/YYYY
+      const dmyMatch = str.match(/(\d{1,2})[-/](\d{1,2})[-/](\d{4})/);
+      if (dmyMatch) {
+        return `${dmyMatch[3]}-${dmyMatch[2].padStart(2, '0')}-${dmyMatch[1].padStart(2, '0')}`;
+      }
+
+      // Check "D [Month] YYYY" e.g. "1 Oktober 2026"
+      const words = str.split(/\s+/);
+      if (words.length >= 3) {
+        const day = words[0].replace(/\D/g, '').padStart(2, '0');
+        const monthStr = words[1].toLowerCase();
+        const year = words[2].replace(/\D/g, '');
+        const MONTH_MAP: Record<string, string> = {
+          januari: '01', jan: '01',
+          februari: '02', feb: '02',
+          maret: '03', mar: '03',
+          april: '04', apr: '04',
+          mei: '05', may: '05',
+          juni: '06', jun: '06',
+          juli: '07', jul: '07',
+          agustus: '08', agu: '08', ags: '08', aug: '08',
+          september: '09', sep: '09',
+          oktober: '10', okt: '10', oct: '10',
+          november: '11', nov: '11',
+          desember: '12', des: '12', dec: '12',
+        };
+        const month = MONTH_MAP[monthStr] || '01';
+        if (year && day) {
+          return `${year}-${month}-${day}`;
+        }
+      }
+
+      return str;
+    };
+
+    return [...rows].sort((a, b) => {
+      // 1. Tanggal: tanggal 1 dulu, lanjut ke tgl 2, 3, dst.
+      const dateA = a.rawDate || parseComparableDate(a.tanggal);
+      const dateB = b.rawDate || parseComparableDate(b.tanggal);
+      if (dateA !== dateB) {
+        return dateA.localeCompare(dateB);
+      }
+
+      // 2. Sesi: Pagi dulu (1), lalu Sore (3), dst.
+      const sessionWeightA = getSessionWeight(a.presensi);
+      const sessionWeightB = getSessionWeight(b.presensi);
+      if (sessionWeightA !== sessionWeightB) {
+        return sessionWeightA - sessionWeightB;
+      }
+
+      // 3. Jam: jam lebih awal dulu
+      const timeA = String(a.jam || '');
+      const timeB = String(b.jam || '');
+      if (timeA !== timeB) {
+        return timeA.localeCompare(timeB);
+      }
+
+      // 4. Nama petugas: alfabetis
+      const nameA = String(a.nama || '');
+      const nameB = String(b.nama || '');
+      return nameA.localeCompare(nameB);
+    });
+  }
+
   // Process rows and load their photos as image Blobs
-  const processAndLoadImages = useCallback(async (rawRows: Array<{ nama: string; tanggal: string; jam: string; presensi: string; lokasi?: string; isManual?: boolean; urls: string[] }>) => {
+  const processAndLoadImages = useCallback(async (rawRows: Array<{ nama: string; tanggal: string; jam: string; presensi: string; lokasi?: string; isManual?: boolean; urls: string[]; rawDate?: string }>) => {
     setLoading(true);
     setLoadingText('Mempersiapkan data dokumentasi...');
 
+    // Urutkan kronologis: Tanggal 1 dulu s/d akhir, dan Pagi dulu sebelum Sore
+    const sortedRows = sortReportsChronological(rawRows);
+
     let allUrlsCount = 0;
-    rawRows.forEach(r => { allUrlsCount += r.urls.length; });
+    sortedRows.forEach(r => { allUrlsCount += r.urls.length; });
     setTotalPhotos(allUrlsCount);
     setLoadedPhotos(0);
 
-    const initialReports: ReportRow[] = rawRows.map((r, rIdx) => ({
+    const initialReports: ReportRow[] = sortedRows.map((r, rIdx) => ({
       id: `row-${rIdx}`,
       nama: r.nama,
       tanggal: r.tanggal,
@@ -161,7 +249,7 @@ export default function RekapDokumentasiPage() {
     const batchSize = 4;
     const flatPhotos: { rIdx: number; pIdx: number; url: string }[] = [];
 
-    rawRows.forEach((r, rIdx) => {
+    sortedRows.forEach((r, rIdx) => {
       r.urls.forEach((url, pIdx) => {
         flatPhotos.push({ rIdx, pIdx, url });
       });
@@ -201,6 +289,7 @@ export default function RekapDokumentasiPage() {
     if (locationId) p.set('location_id', locationId);
     if (sessionType) p.set('session_type', sessionType);
     if (presenceMethod) p.set('presence_method', presenceMethod);
+    p.set('sort_order', 'asc');
     p.set('limit', '200');
     return p.toString();
   }, [startDate, endDate, employeeId, locationId, sessionType, presenceMethod]);
@@ -223,6 +312,7 @@ export default function RekapDokumentasiPage() {
         const presensi = formatPresensiLabel(r.session_type);
         const lokasi = r.locations?.name || '';
         const isManual = Boolean(r.is_manual);
+        const rawDate = r.report_date || (r.timestamp ? r.timestamp.substring(0, 10) : '');
         const urls = (r.report_files || [])
           .map((f: any) => f.drive_url)
           .filter((u: any) => u && String(u).startsWith('http'))
@@ -236,6 +326,7 @@ export default function RekapDokumentasiPage() {
           lokasi,
           isManual,
           urls,
+          rawDate,
         };
       });
 
@@ -292,6 +383,17 @@ export default function RekapDokumentasiPage() {
         const presensiRaw = String(row['Sesi'] || row['Presensi'] || row['sesi'] || '').toLowerCase();
         const isManual = metodeRaw.includes('manual') || presensiRaw.includes('manual');
 
+        let rawDate = '';
+        if (row['Tanggal']) {
+          const matchIso = String(row['Tanggal']).match(/\d{4}-\d{2}-\d{2}/);
+          if (matchIso) rawDate = matchIso[0];
+        }
+        if (!rawDate && (row['Timestamp (WIB)'] || row['Timestamp'])) {
+          const ts = String(row['Timestamp (WIB)'] || row['Timestamp']);
+          const matchIso = ts.match(/\d{4}-\d{2}-\d{2}/);
+          if (matchIso) rawDate = matchIso[0];
+        }
+
         const photoRaw = String(row['Foto/Dokumentasi Lapangan'] || row['Foto'] || row['Dokumentasi'] || row['foto'] || '');
         const urls = photoRaw
           .split(/[\n|;,]+/)
@@ -299,7 +401,7 @@ export default function RekapDokumentasiPage() {
           .filter(u => u.startsWith('http'))
           .slice(0, 5);
 
-        return { nama, tanggal, jam, presensi, lokasi, isManual, urls };
+        return { nama, tanggal, jam, presensi, lokasi, isManual, urls, rawDate };
       }).filter(r => r.nama || r.urls.length > 0);
 
       await processAndLoadImages(parsedRows);
@@ -322,8 +424,8 @@ export default function RekapDokumentasiPage() {
     setSessionType('');
     setPresenceMethod('');
     setTimeout(() => {
-      // Re-fetch default without filters
-      fetch('/api/admin/reports?limit=200')
+      // Re-fetch default without filters (sorted ascending)
+      fetch('/api/admin/reports?sort_order=asc&limit=200')
         .then(r => r.json())
         .then(json => {
           const dbReports = json.data || [];
@@ -333,12 +435,13 @@ export default function RekapDokumentasiPage() {
             const presensi = formatPresensiLabel(r.session_type);
             const lokasi = r.locations?.name || '';
             const isManual = Boolean(r.is_manual);
+            const rawDate = r.report_date || (r.timestamp ? r.timestamp.substring(0, 10) : '');
             const urls = (r.report_files || [])
               .map((f: any) => f.drive_url)
               .filter((u: any) => u && String(u).startsWith('http'))
               .slice(0, 5);
 
-            return { nama, tanggal: parsed.tanggal, jam: parsed.jam, presensi, lokasi, isManual, urls };
+            return { nama, tanggal: parsed.tanggal, jam: parsed.jam, presensi, lokasi, isManual, urls, rawDate };
           });
           processAndLoadImages(parsedRows);
         });

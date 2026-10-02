@@ -25,6 +25,8 @@ export async function GET(request: Request) {
     const locationId = searchParams.get('location_id');
     const sessionType = searchParams.get('session_type');
     const presenceMethod = searchParams.get('presence_method'); // 'realtime' | 'manual'
+    const sortOrder = searchParams.get('sort_order') || searchParams.get('order_direction') || 'desc';
+    const isAscending = sortOrder.toLowerCase() === 'asc';
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = (page - 1) * limit;
@@ -37,7 +39,7 @@ export async function GET(request: Request) {
         locations(id, name, address),
         report_files(id, file_name, file_type, drive_file_id, drive_url)
       `, { count: 'exact' })
-      .order('timestamp', { ascending: false })
+      .order('timestamp', { ascending: isAscending })
       .range(offset, offset + limit - 1);
 
     if (startDate) query = query.gte('report_date', startDate);
