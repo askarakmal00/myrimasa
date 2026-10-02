@@ -17,6 +17,7 @@ export default function AdminReportsPage() {
   const [employeeId, setEmployeeId] = useState('');
   const [locationId, setLocationId] = useState('');
   const [sessionType, setSessionType] = useState('');
+  const [presenceMethod, setPresenceMethod] = useState('');
 
   const buildParams = useCallback(() => {
     const p = new URLSearchParams();
@@ -25,9 +26,10 @@ export default function AdminReportsPage() {
     if (employeeId) p.set('employee_id', employeeId);
     if (locationId) p.set('location_id', locationId);
     if (sessionType) p.set('session_type', sessionType);
+    if (presenceMethod) p.set('presence_method', presenceMethod);
     p.set('limit', '100');
     return p.toString();
-  }, [startDate, endDate, employeeId, locationId, sessionType]);
+  }, [startDate, endDate, employeeId, locationId, sessionType, presenceMethod]);
 
   async function fetchReports() {
     setLoading(true);
@@ -68,7 +70,7 @@ export default function AdminReportsPage() {
   }
 
   function handleReset() {
-    setStartDate(''); setEndDate(''); setEmployeeId(''); setLocationId(''); setSessionType('');
+    setStartDate(''); setEndDate(''); setEmployeeId(''); setLocationId(''); setSessionType(''); setPresenceMethod('');
     setTimeout(fetchReports, 100);
   }
 
@@ -185,6 +187,19 @@ export default function AdminReportsPage() {
               <option value="special">Insidentil (24 Jam)</option>
             </select>
           </div>
+          <div className="filter-group">
+            <label className="filter-label" htmlFor="filter-method">Metode Presensi</label>
+            <select
+              id="filter-method"
+              className="form-select"
+              value={presenceMethod}
+              onChange={e => setPresenceMethod(e.target.value)}
+            >
+              <option value="">Semua Metode</option>
+              <option value="realtime">⏱️ Realtime</option>
+              <option value="manual">📝 Manual</option>
+            </select>
+          </div>
           <div className="filter-actions">
             <button id="btn-apply-filter" type="submit" className="btn btn-primary">Terapkan</button>
             <button id="btn-reset-filter" type="button" className="btn btn-secondary" onClick={handleReset}>Reset</button>
@@ -205,7 +220,7 @@ export default function AdminReportsPage() {
                 <th>Waktu</th>
                 <th>Karyawan</th>
                 <th>Lokasi KHDTK</th>
-                <th>Sesi</th>
+                <th>Sesi &amp; Metode</th>
                 <th>Kegiatan Rutin</th>
                 <th>Insidentil</th>
                 <th>Kondisi</th>
@@ -236,7 +251,18 @@ export default function AdminReportsPage() {
                     </td>
                     <td style={{ whiteSpace: 'nowrap', fontSize: '13px' }}>{r.locations?.name || '—'}</td>
                     <td>
-                      {renderSessionBadge(r.session_type)}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', alignItems: 'flex-start' }}>
+                        {renderSessionBadge(r.session_type)}
+                        {r.is_manual ? (
+                          <span style={{ fontSize: '10px', background: '#fef3c7', color: '#b45309', border: '1px solid #fde68a', borderRadius: '3px', padding: '1px 5px', fontWeight: '700', whiteSpace: 'nowrap' }}>
+                            📝 Manual
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: '10px', background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', borderRadius: '3px', padding: '1px 5px', fontWeight: '700', whiteSpace: 'nowrap' }}>
+                            ⏱️ Realtime
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="truncate" style={{ maxWidth: '160px', fontSize: '12px' }}>{r.routine_activity || '—'}</td>
                     <td className="truncate" style={{ maxWidth: '120px', fontSize: '12px' }}>{r.incident_activity || '—'}</td>

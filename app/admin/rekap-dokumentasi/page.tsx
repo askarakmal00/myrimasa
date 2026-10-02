@@ -18,6 +18,7 @@ interface ReportRow {
   jam: string;
   presensi: string;
   lokasi?: string;
+  isManual?: boolean;
   photos: PhotoItem[];
 }
 
@@ -52,6 +53,7 @@ export default function RekapDokumentasiPage() {
   const [employeeId, setEmployeeId] = useState('');
   const [locationId, setLocationId] = useState('');
   const [sessionType, setSessionType] = useState('');
+  const [presenceMethod, setPresenceMethod] = useState('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -128,7 +130,7 @@ export default function RekapDokumentasiPage() {
   }
 
   // Process rows and load their photos as image Blobs
-  const processAndLoadImages = useCallback(async (rawRows: Array<{ nama: string; tanggal: string; jam: string; presensi: string; lokasi?: string; urls: string[] }>) => {
+  const processAndLoadImages = useCallback(async (rawRows: Array<{ nama: string; tanggal: string; jam: string; presensi: string; lokasi?: string; isManual?: boolean; urls: string[] }>) => {
     setLoading(true);
     setLoadingText('Mempersiapkan data dokumentasi...');
 
@@ -144,6 +146,7 @@ export default function RekapDokumentasiPage() {
       jam: r.jam,
       presensi: r.presensi,
       lokasi: r.lokasi,
+      isManual: r.isManual,
       photos: r.urls.map((url, pIdx) => ({
         id: `p-${rIdx}-${pIdx}`,
         originalUrl: url,
@@ -197,9 +200,10 @@ export default function RekapDokumentasiPage() {
     if (employeeId) p.set('employee_id', employeeId);
     if (locationId) p.set('location_id', locationId);
     if (sessionType) p.set('session_type', sessionType);
+    if (presenceMethod) p.set('presence_method', presenceMethod);
     p.set('limit', '200');
     return p.toString();
-  }, [startDate, endDate, employeeId, locationId, sessionType]);
+  }, [startDate, endDate, employeeId, locationId, sessionType, presenceMethod]);
 
   // Load from system database with active filters
   const handleLoadFromDatabase = useCallback(async () => {
@@ -218,6 +222,7 @@ export default function RekapDokumentasiPage() {
         const parsed = parseTimestampToParts(r.timestamp);
         const presensi = formatPresensiLabel(r.session_type);
         const lokasi = r.locations?.name || '';
+        const isManual = Boolean(r.is_manual);
         const urls = (r.report_files || [])
           .map((f: any) => f.drive_url)
           .filter((u: any) => u && String(u).startsWith('http'))
@@ -229,6 +234,7 @@ export default function RekapDokumentasiPage() {
           jam: parsed.jam,
           presensi,
           lokasi,
+          isManual,
           urls,
         };
       });
@@ -282,6 +288,9 @@ export default function RekapDokumentasiPage() {
 
         const presensi = formatPresensiLabel(row['Sesi'] || row['Presensi'] || row['sesi'] || '');
         const lokasi = row['Lokasi KHDTK'] || row['Lokasi'] || '';
+        const metodeRaw = String(row['Metode Presensi'] || row['Metode'] || '').toLowerCase();
+        const presensiRaw = String(row['Sesi'] || row['Presensi'] || row['sesi'] || '').toLowerCase();
+        const isManual = metodeRaw.includes('manual') || presensiRaw.includes('manual');
 
         const photoRaw = String(row['Foto/Dokumentasi Lapangan'] || row['Foto'] || row['Dokumentasi'] || row['foto'] || '');
         const urls = photoRaw
@@ -290,7 +299,7 @@ export default function RekapDokumentasiPage() {
           .filter(u => u.startsWith('http'))
           .slice(0, 5);
 
-        return { nama, tanggal, jam, presensi, lokasi, urls };
+        return { nama, tanggal, jam, presensi, lokasi, isManual, urls };
       }).filter(r => r.nama || r.urls.length > 0);
 
       await processAndLoadImages(parsedRows);
@@ -311,6 +320,7 @@ export default function RekapDokumentasiPage() {
     setEmployeeId('');
     setLocationId('');
     setSessionType('');
+    setPresenceMethod('');
     setTimeout(() => {
       // Re-fetch default without filters
       fetch('/api/admin/reports?limit=200')
@@ -322,12 +332,13 @@ export default function RekapDokumentasiPage() {
             const parsed = parseTimestampToParts(r.timestamp);
             const presensi = formatPresensiLabel(r.session_type);
             const lokasi = r.locations?.name || '';
+            const isManual = Boolean(r.is_manual);
             const urls = (r.report_files || [])
               .map((f: any) => f.drive_url)
               .filter((u: any) => u && String(u).startsWith('http'))
               .slice(0, 5);
 
-            return { nama, tanggal: parsed.tanggal, jam: parsed.jam, presensi, lokasi, urls };
+            return { nama, tanggal: parsed.tanggal, jam: parsed.jam, presensi, lokasi, isManual, urls };
           });
           processAndLoadImages(parsedRows);
         });
@@ -350,6 +361,11 @@ export default function RekapDokumentasiPage() {
     if (sessionType === 'evening') return 'Sore';
     if (sessionType === 'special') return 'Insidentil (24 Jam)';
     return 'Semua Sesi';
+  };
+  const getSelectedMethodName = () => {
+    if (presenceMethod === 'manual') return 'Absen Manual';
+    if (presenceMethod === 'realtime') return 'Presensi Realtime';
+    return 'Semua Metode';
   };
 
   return (
@@ -512,6 +528,22 @@ export default function RekapDokumentasiPage() {
               </select>
             </div>
 
+            {/* Metode Presensi */}
+            <div>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#475569', marginBottom: '4px' }}>
+                Metode Presensi
+              </label>
+              <select
+                value={presenceMethod}
+                onChange={e => setPresenceMethod(e.target.value)}
+                style={{ width: '100%', padding: '7px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', background: '#f8fafc' }}
+              >
+                <option value="">Semua Metode</option>
+                <option value="realtime">⏱️ Realtime</option>
+                <option value="manual">📝 Absen Manual</option>
+              </select>
+            </div>
+
             {/* Filter Buttons */}
             <div style={{ display: 'flex', gap: '8px' }}>
               <button
@@ -650,6 +682,7 @@ export default function RekapDokumentasiPage() {
             <div><strong>Petugas:</strong> {getSelectedEmployeeName()}</div>
             <div><strong>Lokasi:</strong> {getSelectedLocationName()}</div>
             <div><strong>Sesi:</strong> {getSelectedSessionName()}</div>
+            <div><strong>Metode:</strong> {getSelectedMethodName()}</div>
           </div>
         </div>
       </div>
@@ -734,17 +767,50 @@ export default function RekapDokumentasiPage() {
                     {row.jam || '—'}
                   </td>
                   <td style={{ padding: '9px 10px', fontSize: '11.5px', verticalAlign: 'middle' }}>
-                    <span style={{
-                      display: 'inline-block',
-                      padding: '2px 7px',
-                      borderRadius: '4px',
-                      fontSize: '10.5px',
-                      fontWeight: '600',
-                      background: row.presensi === 'Pagi' ? '#dcfce7' : row.presensi === 'Sore' ? '#ffedd5' : '#f1f5f9',
-                      color: row.presensi === 'Pagi' ? '#15803d' : row.presensi === 'Sore' ? '#c2410c' : '#475569',
-                    }}>
-                      {row.presensi}
-                    </span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start' }}>
+                      <span style={{
+                        display: 'inline-block',
+                        padding: '2px 7px',
+                        borderRadius: '4px',
+                        fontSize: '10.5px',
+                        fontWeight: '600',
+                        background: row.presensi === 'Pagi' ? '#dcfce7' : row.presensi === 'Sore' ? '#ffedd5' : '#f1f5f9',
+                        color: row.presensi === 'Pagi' ? '#15803d' : row.presensi === 'Sore' ? '#c2410c' : '#475569',
+                      }}>
+                        {row.presensi}
+                      </span>
+                      {row.isManual ? (
+                        <span style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '3px',
+                          padding: '1px 6px',
+                          borderRadius: '4px',
+                          fontSize: '9.5px',
+                          fontWeight: '600',
+                          background: '#fef3c7',
+                          color: '#92400e',
+                          border: '1px solid #fde68a',
+                        }}>
+                          📝 Manual
+                        </span>
+                      ) : (
+                        <span style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '3px',
+                          padding: '1px 6px',
+                          borderRadius: '4px',
+                          fontSize: '9.5px',
+                          fontWeight: '600',
+                          background: '#f0fdf4',
+                          color: '#166534',
+                          border: '1px solid #bbf7d0',
+                        }}>
+                          ⏱️ Realtime
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td style={{ padding: '7px 10px', verticalAlign: 'middle' }}>
                     {/* Horizontal Photo Container */}

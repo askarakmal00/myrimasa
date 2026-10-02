@@ -99,3 +99,12 @@ CREATE POLICY "Users can insert files for their own manual attendances"
       AND ma.user_id = auth.uid()
     )
   );
+
+-- =============================================
+-- 5. FLAG IN REPORTS TABLE
+-- Menambahkan flag is_manual dan alasan di tabel reports
+-- =============================================
+ALTER TABLE public.reports ADD COLUMN IF NOT EXISTS is_manual BOOLEAN DEFAULT FALSE;
+ALTER TABLE public.reports ADD COLUMN IF NOT EXISTS manual_reason TEXT;
+CREATE INDEX IF NOT EXISTS idx_reports_is_manual ON public.reports(is_manual);
+

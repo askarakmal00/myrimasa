@@ -155,6 +155,23 @@ export async function GET(request: Request) {
     const { data, error } = await query;
     if (error) return NextResponse.json({ error: 'Gagal memuat data' }, { status: 500 });
 
+    // Query approved manual attendances to detect which reports are manual vs realtime
+    let approvedManuals: any[] = [];
+    try {
+      const { data: manualRows } = await adminClient
+        .from('manual_attendances')
+        .select('user_id, session_type, report_date')
+        .eq('status', 'approved');
+      approvedManuals = manualRows || [];
+    } catch {
+      // Safe fallback
+    }
+
+    const manualSet = new Set<string>();
+    approvedManuals.forEach((m: any) => {
+      manualSet.add(`${m.user_id}_${m.session_type}_${m.report_date}`);
+    });
+
     const rows = data || [];
 
     // ============================================================
@@ -165,9 +182,8 @@ export async function GET(request: Request) {
     workbook.created = new Date();
     workbook.calcProperties.fullCalcOnLoad = true;
 
-
     // ============================================================
-    // SHEET 1: Laporan Presensi (sama persis seperti sebelumnya)
+    // SHEET 1: Laporan Presensi
     // ============================================================
     const sheetLaporan = workbook.addWorksheet('Laporan Presensi');
 
@@ -180,6 +196,7 @@ export async function GET(request: Request) {
       { header: 'Lokasi KHDTK', key: 'lokasi', width: 22 },
       { header: 'Email Petugas', key: 'email', width: 28 },
       { header: 'Sesi', key: 'sesi', width: 24 },
+      { header: 'Metode Presensi', key: 'metode', width: 18 },
       { header: 'Foto/Dokumentasi Lapangan', key: 'foto', width: 48 },
       { header: 'Kegiatan Rutin', key: 'rutin', width: 36 },
       { header: 'Kegiatan Insidentil', key: 'insidentil', width: 26 },
@@ -206,6 +223,8 @@ export async function GET(request: Request) {
         .join(' | ');
 
       const { hari, tanggal, jam } = parseWibParts(r.timestamp);
+      const isManual = Boolean(r.is_manual || manualSet.has(`${r.user_id}_${r.session_type}_${r.report_date}`));
+      const metodeLabel = isManual ? 'Manual' : 'Realtime';
 
       sheetLaporan.addRow({
         no: idx + 1,
@@ -216,6 +235,7 @@ export async function GET(request: Request) {
         lokasi: r.locations?.name || '',
         email: r.profiles?.email || '',
         sesi: getSessionLabel(r.session_type),
+        metode: metodeLabel,
         foto: fileUrls || '—',
         rutin: r.routine_activity || '',
         insidentil: r.incident_activity || '',
@@ -227,7 +247,6 @@ export async function GET(request: Request) {
         maps: r.maps_url || '',
       });
     });
-
 
     // Freeze header row Sheet 1
     sheetLaporan.views = [{ state: 'frozen', ySplit: 1 }];
@@ -241,7 +260,7 @@ export async function GET(request: Request) {
       { header: 'Nama', key: 'nama', width: 24 },
       { header: 'Tanggal', key: 'tanggal', width: 14 },
       { header: 'Jam', key: 'jam', width: 10 },
-      { header: 'Presensi', key: 'presensi', width: 14 },
+      { header: 'Presensi', key: 'presensi', width: 18 },
       { header: 'Foto 1', key: 'foto1', width: 30 },
       { header: 'Foto 2', key: 'foto2', width: 30 },
       { header: 'Foto 3', key: 'foto3', width: 30 },
@@ -264,7 +283,9 @@ export async function GET(request: Request) {
       const excelRowIndex = i + 2; // 1-indexed, header is row 1
 
       const { tanggal, jam } = parseTanggalJam(r.timestamp);
-      const presensi = getPresensiLabel(r.session_type);
+      const isManual = Boolean(r.is_manual || manualSet.has(`${r.user_id}_${r.session_type}_${r.report_date}`));
+      const presensi = `${getPresensiLabel(r.session_type)} (${isManual ? 'Manual' : 'Realtime'})`;
+
 
       const photoUrls: string[] = (r.report_files || [])
         .map((f: any) => f.drive_url)
