@@ -141,6 +141,23 @@ export default function AdminSidebar({ profile }: AdminSidebarProps) {
 
               <li className="admin-nav-item">
                 <Link
+                  href="/admin/manual-attendance"
+                  onClick={() => setMobileOpen(false)}
+                  className={isActive('/admin/manual-attendance', false) ? 'active' : ''}
+                >
+                  <span className="admin-nav-icon">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+                      <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+                      <polyline points="9 14 11 16 15 11" />
+                    </svg>
+                  </span>
+                  <span>Approval Absen Manual</span>
+                </Link>
+              </li>
+
+              <li className="admin-nav-item">
+                <Link
                   href="/admin/employees"
                   onClick={() => setMobileOpen(false)}
                   className={isActive('/admin/employees', false) ? 'active' : ''}

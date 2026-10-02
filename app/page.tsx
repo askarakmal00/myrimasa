@@ -193,6 +193,63 @@ export default async function HomePage() {
           />
         </div>
 
+        {/* Section 3: Manual Attendance / Absen Manual */}
+        <div style={{
+          marginBottom: '24px',
+        }}>
+          <div style={{
+            fontSize: '13.5px',
+            fontWeight: '600',
+            color: 'var(--color-text)',
+            marginBottom: '10px',
+            letterSpacing: '-0.1px',
+          }}>
+            Koreksi &amp; Absen Manual
+          </div>
+
+          <div style={{
+            background: 'var(--color-surface)',
+            border: '1px solid var(--color-border)',
+            borderRadius: 'var(--radius-lg)',
+            padding: '16px 18px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '14px',
+            flexWrap: 'wrap',
+            boxShadow: 'var(--shadow-sm)',
+          }}>
+            <div style={{ flex: '1 1 240px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '16px' }}>📝</span>
+                <div style={{ fontSize: '14px', fontWeight: '700', color: 'var(--color-text)' }}>
+                  Pengajuan Absen Manual
+                </div>
+              </div>
+              <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginTop: '4px', lineHeight: 1.4 }}>
+                Terlambat absen atau perlu mengganti/mereplace presensi di hari tertentu? Ajukan absen manual untuk diverifikasi Admin.
+              </div>
+            </div>
+
+            <Link
+              href="/presensi/manual"
+              className="btn btn-secondary btn-sm"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 14px',
+                fontWeight: '600',
+                textDecoration: 'none',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <span>Isi Absen Manual</span>
+              <span>→</span>
+            </Link>
+          </div>
+        </div>
+
         {/* Footer info note */}
         <div style={{
           display: 'flex',

@@ -99,3 +99,46 @@ export interface SubmitReportPayload {
   gps_timestamp: string;
   files: File[];
 }
+
+export type ManualAttendanceStatus = 'pending' | 'approved' | 'rejected';
+
+export interface ManualAttendance {
+  id: string;
+  user_id: string;
+  report_date: string;
+  session_type: SessionType | 'afternoon';
+  actual_time: string;
+  timestamp: string;
+  location_id: string | null;
+  location_name: string | null;
+  routine_activity: string;
+  incident_activity: string | null;
+  field_condition: string | null;
+  follow_up: string | null;
+  reason: string;
+  replaces_report_id: string | null;
+  status: ManualAttendanceStatus;
+  admin_notes: string | null;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  created_at: string;
+  // Joined fields
+  profiles?: Profile;
+  locations?: Location;
+  replaces_report?: Report;
+  manual_attendance_files?: ManualAttendanceFile[];
+}
+
+export interface ManualAttendanceFile {
+  id: string;
+  manual_attendance_id: string;
+  file_name: string;
+  file_type: string;
+  drive_file_id: string | null;
+  drive_url: string | null;
+  created_at: string;
+}
+
+// Re-export contract and billing types
+export * from './contract-types';
+
