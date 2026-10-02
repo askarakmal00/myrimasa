@@ -5,12 +5,21 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import { Location, Profile, SessionType } from '@/lib/types';
+import { compressImageWithStats, formatBytes, CompressionResult } from '@/lib/image-compression';
 
 interface ExistingReportInfo {
   id: string;
   timestamp: string;
   routine_activity: string | null;
   locations?: { name: string } | null;
+}
+
+interface ManualPhotoItem {
+  file: File;
+  previewUrl: string;
+  originalSize: number;
+  compressedSize: number;
+  savingsPercent: number;
 }
 
 interface MyManualAttendanceItem {
@@ -49,8 +58,8 @@ export default function ManualAttendancePage() {
   const [incidentActivity, setIncidentActivity] = useState('Nihil');
   const [fieldCondition, setFieldCondition] = useState('');
   const [followUp, setFollowUp] = useState('');
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [filePreviews, setFilePreviews] = useState<string[]>([]);
+  const [photos, setPhotos] = useState<ManualPhotoItem[]>([]);
+  const [compressing, setCompressing] = useState(false);
 
   // Replacement detection
   const [checkingExisting, setCheckingExisting] = useState(false);
@@ -111,24 +120,52 @@ export default function ManualAttendancePage() {
     else if (newSession === 'special') setActualTime('12:00');
   };
 
-  // Handle file selection
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle file selection with client-side compression
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
-    const newFiles = [...selectedFiles, ...files].slice(0, 5);
-    setSelectedFiles(newFiles);
+    setCompressing(true);
+    setErrorMessage('');
 
-    // Create previews
-    const previews = newFiles.map(f => URL.createObjectURL(f));
-    setFilePreviews(previews);
+    try {
+      const remainingSlots = Math.max(0, 5 - photos.length);
+      const toProcess = files.slice(0, remainingSlots);
+
+      const processedList: ManualPhotoItem[] = await Promise.all(
+        toProcess.map(async (file) => {
+          if (file.type.startsWith('image/')) {
+            const res: CompressionResult = await compressImageWithStats(file);
+            return {
+              file: res.file,
+              previewUrl: res.previewUrl,
+              originalSize: res.originalSize,
+              compressedSize: res.compressedSize,
+              savingsPercent: res.savingsPercent,
+            };
+          }
+          return {
+            file,
+            previewUrl: URL.createObjectURL(file),
+            originalSize: file.size,
+            compressedSize: file.size,
+            savingsPercent: 0,
+          };
+        })
+      );
+
+      setPhotos(prev => [...prev, ...processedList].slice(0, 5));
+    } catch (err) {
+      console.error('Image compression error:', err);
+      setErrorMessage('Gagal mengompresi foto. Silakan coba pilih foto lain.');
+    } finally {
+      setCompressing(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
-  const removeFile = (index: number) => {
-    const updatedFiles = selectedFiles.filter((_, i) => i !== index);
-    setSelectedFiles(updatedFiles);
-    const updatedPreviews = updatedFiles.map(f => URL.createObjectURL(f));
-    setFilePreviews(updatedPreviews);
+  const removePhoto = (index: number) => {
+    setPhotos(prev => prev.filter((_, i) => i !== index));
   };
 
   // Handle Form Submit
@@ -136,6 +173,11 @@ export default function ManualAttendancePage() {
     e.preventDefault();
     setErrorMessage('');
     setSuccessMessage('');
+
+    if (compressing) {
+      setErrorMessage('Harap tunggu, proses kompresi foto sedang berjalan...');
+      return;
+    }
 
     if (!reason.trim()) {
       setErrorMessage('Alasan keterlambatan / pengisian absen manual wajib diisi.');
@@ -153,7 +195,7 @@ export default function ManualAttendancePage() {
       setErrorMessage('Kolom Tindak Lanjut wajib diisi.');
       return;
     }
-    if (selectedFiles.length === 0) {
+    if (photos.length === 0) {
       setErrorMessage('Minimal lampirkan 1 foto dokumentasi / bukti kehadiran.');
       return;
     }
@@ -172,8 +214,9 @@ export default function ManualAttendancePage() {
       formData.append('field_condition', fieldCondition);
       formData.append('follow_up', followUp);
 
-      selectedFiles.forEach(file => {
-        formData.append('files', file);
+      // Append lightweight compressed files (typically ~150KB each instead of 10MB)
+      photos.forEach(item => {
+        formData.append('files', item.file);
       });
 
       const res = await fetch('/api/manual-attendance', {
@@ -181,10 +224,19 @@ export default function ManualAttendancePage() {
         body: formData,
       });
 
-      const json = await res.json();
+      let json: any = null;
+      try {
+        json = await res.json();
+      } catch {
+        // Handle server non-JSON responses e.g. 413 Request Entity Too Large or 502/504
+        if (res.status === 413) {
+          throw new Error('Ukuran foto terlalu besar untuk server. Silakan coba unggah foto dengan resolusi lebih kecil.');
+        }
+        throw new Error(`Terjadi kesalahan server (${res.status}). Silakan coba sesaat lagi.`);
+      }
 
       if (!res.ok) {
-        throw new Error(json.error || 'Gagal mengirim pengajuan absen manual');
+        throw new Error(json?.error || 'Gagal mengirim pengajuan absen manual');
       }
 
       setSuccessMessage('Pengajuan absen manual berhasil dikirim! Menunggu persetujuan (approval) dari Administrator.');
@@ -195,15 +247,14 @@ export default function ManualAttendancePage() {
       setIncidentActivity('Nihil');
       setFieldCondition('');
       setFollowUp('');
-      setSelectedFiles([]);
-      setFilePreviews([]);
+      setPhotos([]);
 
       // Refresh history
       const histRes = await fetch('/api/manual-attendance');
       const histJson = await histRes.json();
       setHistory(histJson.data || []);
     } catch (err: any) {
-      setErrorMessage(err.message || 'Terjadi kesalahan');
+      setErrorMessage(err.message || 'Terjadi kesalahan saat mengirim pengajuan');
     } finally {
       setSubmitting(false);
     }
@@ -459,14 +510,28 @@ export default function ManualAttendancePage() {
               style={{ display: 'none' }}
             />
 
+            {/* Compressing Indicator */}
+            {compressing && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '6px', marginBottom: '12px', fontSize: '12px', color: '#1d4ed8' }}>
+                <div style={{ width: '14px', height: '14px', border: '2px solid #3b82f6', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                <span>Mengompresi foto agar proses kirim cepat dan ringan...</span>
+              </div>
+            )}
+
             {/* Thumbnail previews */}
             <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
-              {filePreviews.map((preview, idx) => (
-                <div key={idx} style={{ position: 'relative', width: '80px', height: '80px', borderRadius: '6px', overflow: 'hidden', border: '1px solid #cbd5e1' }}>
-                  <img src={preview} alt={`Foto ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              {photos.map((photo, idx) => (
+                <div key={idx} style={{ position: 'relative', width: '84px', height: '84px', borderRadius: '6px', overflow: 'hidden', border: '1px solid #cbd5e1' }}>
+                  <img src={photo.previewUrl} alt={`Foto ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  
+                  {/* Badge size */}
+                  <span style={{ position: 'absolute', bottom: '2px', left: '2px', background: 'rgba(0,0,0,0.65)', color: '#fff', fontSize: '8.5px', padding: '1px 4px', borderRadius: '2px', fontWeight: '600' }}>
+                    {formatBytes(photo.compressedSize)}
+                  </span>
+
                   <button
                     type="button"
-                    onClick={() => removeFile(idx)}
+                    onClick={() => removePhoto(idx)}
                     style={{
                       position: 'absolute',
                       top: '2px',
@@ -489,13 +554,14 @@ export default function ManualAttendancePage() {
                 </div>
               ))}
 
-              {selectedFiles.length < 5 && (
+              {photos.length < 5 && (
                 <button
                   type="button"
+                  disabled={compressing}
                   onClick={() => fileInputRef.current?.click()}
                   style={{
-                    width: '80px',
-                    height: '80px',
+                    width: '84px',
+                    height: '84px',
                     borderRadius: '6px',
                     border: '1px dashed #94a3b8',
                     background: '#f8fafc',
@@ -503,10 +569,11 @@ export default function ManualAttendancePage() {
                     flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    cursor: 'pointer',
+                    cursor: compressing ? 'not-allowed' : 'pointer',
                     color: '#64748b',
                     fontSize: '11px',
                     gap: '4px',
+                    opacity: compressing ? 0.6 : 1,
                   }}
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -523,10 +590,10 @@ export default function ManualAttendancePage() {
           <button
             type="submit"
             className="btn btn-primary"
-            disabled={submitting}
+            disabled={submitting || compressing}
             style={{ width: '100%', padding: '12px', fontSize: '14px', fontWeight: '600' }}
           >
-            {submitting ? 'Mengirim Pengajuan...' : 'Kirim Pengajuan Absen Manual'}
+            {submitting ? 'Mengirim Pengajuan...' : compressing ? 'Mengompresi Foto...' : 'Kirim Pengajuan Absen Manual'}
           </button>
         </form>
 
