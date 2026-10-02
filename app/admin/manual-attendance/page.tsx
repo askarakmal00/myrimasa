@@ -110,6 +110,9 @@ export default function AdminManualAttendancePage() {
 
       handleCloseReview();
       fetchRequests();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('manual-attendance-updated'));
+      }
     } catch (err: any) {
       setReviewError(err.message || 'Terjadi kesalahan saat memproses review');
     } finally {
@@ -173,6 +176,9 @@ export default function AdminManualAttendancePage() {
       setBulkModalOpen(false);
       setSelectedIds([]);
       fetchRequests();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('manual-attendance-updated'));
+      }
     } catch (err: any) {
       setBulkError(err?.message || 'Terjadi kesalahan saat memproses approval massal');
     } finally {

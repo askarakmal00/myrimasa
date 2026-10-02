@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Profile } from '@/lib/types';
 import { signOut } from '@/app/actions';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface AdminSidebarProps {
   profile: Profile;
@@ -14,6 +14,40 @@ export default function AdminSidebar({ profile }: AdminSidebarProps) {
   const pathname = usePathname();
   const [signingOut, setSigningOut] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [pendingCount, setPendingCount] = useState<number>(0);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function fetchPendingCount() {
+      try {
+        const res = await fetch('/api/manual-attendance?status=pending');
+        if (res.ok) {
+          const json = await res.json();
+          if (isMounted && Array.isArray(json.data)) {
+            setPendingCount(json.data.length);
+          }
+        }
+      } catch {
+        // Silently catch network or migration errors
+      }
+    }
+
+    fetchPendingCount();
+
+    // Re-check periodically every 30 seconds
+    const interval = setInterval(fetchPendingCount, 30000);
+
+    // Listen for custom update event
+    const handleUpdate = () => fetchPendingCount();
+    window.addEventListener('manual-attendance-updated', handleUpdate);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+      window.removeEventListener('manual-attendance-updated', handleUpdate);
+    };
+  }, [pathname]);
 
   async function handleSignOut() {
     setSigningOut(true);
@@ -40,8 +74,23 @@ export default function AdminSidebar({ profile }: AdminSidebarProps) {
           onClick={() => setMobileOpen(!mobileOpen)}
           className="admin-hamburger-btn"
           aria-label="Toggle menu"
+          style={{ position: 'relative' }}
         >
           {mobileOpen ? '✕' : '☰'}
+          {pendingCount > 0 && !mobileOpen && (
+            <span
+              style={{
+                position: 'absolute',
+                top: '5px',
+                right: '5px',
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                background: '#ef4444',
+                boxShadow: '0 0 0 2px #ffffff',
+              }}
+            />
+          )}
         </button>
       </div>
 
@@ -152,7 +201,32 @@ export default function AdminSidebar({ profile }: AdminSidebarProps) {
                       <polyline points="9 14 11 16 15 11" />
                     </svg>
                   </span>
-                  <span>Approval Absen Manual</span>
+                  <span style={{ flex: 1, minWidth: 0, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                    Approval Absen Manual
+                  </span>
+                  {pendingCount > 0 && (
+                    <span
+                      style={{
+                        marginLeft: 'auto',
+                        background: '#ef4444',
+                        color: '#ffffff',
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        minWidth: '20px',
+                        height: '20px',
+                        borderRadius: '10px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '0 6px',
+                        boxShadow: '0 1px 3px rgba(239, 68, 68, 0.4)',
+                        lineHeight: 1,
+                      }}
+                      title={`${pendingCount} pengajuan perlu ditinjau`}
+                    >
+                      {pendingCount}
+                    </span>
+                  )}
                 </Link>
               </li>
 
