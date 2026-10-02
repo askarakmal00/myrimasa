@@ -20,6 +20,13 @@ export default function AdminManualAttendancePage() {
   const [submittingReview, setSubmittingReview] = useState(false);
   const [reviewError, setReviewError] = useState('');
 
+  // Bulk Selection States
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkModalOpen, setBulkModalOpen] = useState(false);
+  const [bulkAdminNotes, setBulkAdminNotes] = useState('Disetujui secara massal oleh Administrator.');
+  const [submittingBulk, setSubmittingBulk] = useState(false);
+  const [bulkError, setBulkError] = useState('');
+
   // Image Preview Modal
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
@@ -56,6 +63,11 @@ export default function AdminManualAttendancePage() {
       .then(data => setEmployees(Array.isArray(data) ? data : []))
       .catch(() => {});
   }, [fetchRequests]);
+
+  // Clear selections when filter changes
+  useEffect(() => {
+    setSelectedIds([]);
+  }, [statusFilter, employeeFilter]);
 
   const handleOpenReview = (req: ManualAttendance, action: 'approve' | 'reject') => {
     setSelectedRequest(req);
@@ -102,6 +114,69 @@ export default function AdminManualAttendancePage() {
       setReviewError(err.message || 'Terjadi kesalahan saat memproses review');
     } finally {
       setSubmittingReview(false);
+    }
+  };
+
+  // Bulk Actions
+  const pendingRequests = requests.filter(r => r.status === 'pending');
+  const allPendingSelected = pendingRequests.length > 0 && pendingRequests.every(r => selectedIds.includes(r.id));
+
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds(prev =>
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleSelectAllPending = () => {
+    if (allPendingSelected) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(pendingRequests.map(r => r.id));
+    }
+  };
+
+  const handleOpenBulkApprove = (preselectIds?: string[]) => {
+    if (preselectIds && preselectIds.length > 0) {
+      setSelectedIds(preselectIds);
+    }
+    setBulkAdminNotes('Disetujui secara massal oleh Administrator.');
+    setBulkError('');
+    setBulkModalOpen(true);
+  };
+
+  const handleCloseBulkApprove = () => {
+    setBulkModalOpen(false);
+    setBulkError('');
+  };
+
+  const handleExecuteBulkApprove = async () => {
+    if (selectedIds.length === 0) return;
+    setSubmittingBulk(true);
+    setBulkError('');
+
+    try {
+      const res = await fetch('/api/manual-attendance/bulk-review', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ids: selectedIds,
+          action: 'approve',
+          admin_notes: bulkAdminNotes,
+        }),
+      });
+
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json.error || 'Gagal memproses approval massal');
+      }
+
+      setBulkModalOpen(false);
+      setSelectedIds([]);
+      fetchRequests();
+    } catch (err: any) {
+      setBulkError(err?.message || 'Terjadi kesalahan saat memproses approval massal');
+    } finally {
+      setSubmittingBulk(false);
     }
   };
 
@@ -237,6 +312,110 @@ export default function AdminManualAttendancePage() {
         </div>
       </div>
 
+      {/* Bulk Action Bar (Visible when there are pending requests and statusFilter is pending or all) */}
+      {pendingRequests.length > 0 && (statusFilter === 'pending' || statusFilter === 'all') && (
+        <div
+          style={{
+            background: selectedIds.length > 0 ? '#f0fdf4' : '#f8fafc',
+            border: selectedIds.length > 0 ? '1.5px solid #86efac' : '1px solid #e2e8f0',
+            borderRadius: '10px',
+            padding: '12px 18px',
+            marginBottom: '18px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '12px',
+            boxShadow: selectedIds.length > 0 ? '0 2px 4px rgba(22, 163, 74, 0.08)' : 'none',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '600', color: '#1e293b', userSelect: 'none' }}>
+              <input
+                type="checkbox"
+                checked={allPendingSelected}
+                onChange={handleSelectAllPending}
+                style={{ width: '17px', height: '17px', cursor: 'pointer', accentColor: '#15803d' }}
+              />
+              <span>Pilih Semua yang Menunggu Review ({pendingRequests.length})</span>
+            </label>
+
+            {selectedIds.length > 0 && (
+              <span style={{ fontSize: '12px', background: '#dcfce7', color: '#15803d', fontWeight: '700', padding: '2px 8px', borderRadius: '12px' }}>
+                {selectedIds.length} dipilih
+              </span>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            {selectedIds.length > 0 ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setSelectedIds([])}
+                  style={{
+                    padding: '7px 12px',
+                    borderRadius: '6px',
+                    border: '1px solid #cbd5e1',
+                    background: '#ffffff',
+                    color: '#64748b',
+                    fontSize: '12.5px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Batal Pilih
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleOpenBulkApprove()}
+                  style={{
+                    padding: '7px 16px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    background: '#15803d',
+                    color: '#ffffff',
+                    fontSize: '12.5px',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                  }}
+                >
+                  <span>✓</span>
+                  <span>Setujui {selectedIds.length} Terpilih (Bulk Approve)</span>
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={() => handleOpenBulkApprove(pendingRequests.map(r => r.id))}
+                style={{
+                  padding: '7px 14px',
+                  borderRadius: '6px',
+                  border: '1px solid #86efac',
+                  background: '#ffffff',
+                  color: '#15803d',
+                  fontSize: '12.5px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                <span>⚡</span>
+                <span>Setujui Semua Menunggu Review ({pendingRequests.length})</span>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Content List */}
       {loading ? (
         <div style={{ textAlign: 'center', padding: '60px', color: '#64748b', fontSize: '14px' }}>
@@ -261,16 +440,26 @@ export default function AdminManualAttendancePage() {
             <div
               key={req.id}
               style={{
-                background: '#ffffff',
-                border: '1px solid #e2e8f0',
+                background: selectedIds.includes(req.id) ? '#fafffd' : '#ffffff',
+                border: selectedIds.includes(req.id) ? '2px solid #16a34a' : '1px solid #e2e8f0',
                 borderRadius: '12px',
                 padding: '20px',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+                boxShadow: selectedIds.includes(req.id) ? '0 4px 6px -1px rgba(22, 163, 74, 0.1)' : '0 1px 3px rgba(0,0,0,0.03)',
+                transition: 'border 0.15s, background 0.15s',
               }}
             >
-              {/* Card Header: Petugas, Tanggal, Sesi, Status */}
+              {/* Card Header: Checkbox (if pending), Petugas, Tanggal, Sesi, Status */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px', borderBottom: '1px solid #f1f5f9', paddingBottom: '14px', marginBottom: '14px' }}>
-                <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  {req.status === 'pending' && (
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.includes(req.id)}
+                      onChange={() => handleToggleSelect(req.id)}
+                      title="Pilih pengajuan ini"
+                      style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#15803d' }}
+                    />
+                  )}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#0284c7', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700', fontSize: '13px' }}>
                       {req.profiles?.name?.charAt(0).toUpperCase() || 'P'}
@@ -534,6 +723,111 @@ export default function AdminManualAttendancePage() {
                 }}
               >
                 {submittingReview ? 'Memproses...' : reviewAction === 'approve' ? 'Ya, Setujui' : 'Tolak Pengajuan'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =======================================================
+          MODAL: BULK APPROVE CONFIRMATION
+         ======================================================= */}
+      {bulkModalOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.65)',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px',
+          }}
+        >
+          <div style={{ background: '#ffffff', borderRadius: '12px', maxWidth: '520px', width: '100%', padding: '24px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.2)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+              <span style={{ fontSize: '20px' }}>⚡</span>
+              <h3 style={{ fontSize: '17px', fontWeight: '700', color: '#15803d', margin: 0 }}>
+                Setujui Massal (Bulk Approve)
+              </h3>
+            </div>
+
+            <p style={{ fontSize: '13px', color: '#475569', margin: '0 0 14px', lineHeight: 1.5 }}>
+              Anda akan menyetujui sekaligus <strong>{selectedIds.length} pengajuan absen manual</strong>. Seluruh presensi akan langsung diperbarui di database dan tercatat sebagai presensi yang sah.
+            </p>
+
+            {bulkError && (
+              <div style={{ background: '#fee2e2', color: '#991b1b', fontSize: '12px', padding: '8px 12px', borderRadius: '6px', marginBottom: '14px' }}>
+                ⚠️ {bulkError}
+              </div>
+            )}
+
+            {/* List preview of requests being approved */}
+            <div style={{ maxHeight: '160px', overflowY: 'auto', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 12px', marginBottom: '14px', fontSize: '12px' }}>
+              <div style={{ fontWeight: '700', color: '#475569', marginBottom: '6px' }}>
+                Daftar Pengajuan yang Akan Disetujui ({selectedIds.length}):
+              </div>
+              <ul style={{ margin: 0, paddingLeft: '18px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                {requests
+                  .filter(r => selectedIds.includes(r.id))
+                  .map(r => (
+                    <li key={r.id} style={{ color: '#1e293b' }}>
+                      <strong>{r.profiles?.name || 'Petugas'}</strong> — {r.report_date} ({r.session_type === 'morning' ? 'Pagi' : r.session_type === 'evening' ? 'Sore' : 'Insidentil'})
+                      {r.replaces_report_id && <span style={{ color: '#b45309', marginLeft: '6px', fontSize: '11px', fontWeight: '600' }}>(Replace)</span>}
+                    </li>
+                  ))}
+              </ul>
+            </div>
+
+            <div style={{ marginBottom: '18px' }}>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#334155', marginBottom: '4px' }}>
+                Catatan Administrator untuk Seluruh Pengajuan:
+              </label>
+              <textarea
+                className="form-textarea"
+                rows={2}
+                value={bulkAdminNotes}
+                onChange={e => setBulkAdminNotes(e.target.value)}
+                placeholder="Contoh: Disetujui secara massal oleh Administrator."
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={handleCloseBulkApprove}
+                disabled={submittingBulk}
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleExecuteBulkApprove}
+                disabled={submittingBulk}
+                style={{
+                  padding: '9px 18px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  background: '#15803d',
+                  color: '#ffffff',
+                  fontWeight: '700',
+                  fontSize: '13px',
+                  cursor: submittingBulk ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                {submittingBulk ? (
+                  <>
+                    <div style={{ width: '14px', height: '14px', border: '2px solid #ffffff', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                    <span>Menyetujui {selectedIds.length} Pengajuan...</span>
+                  </>
+                ) : (
+                  <span>Ya, Setujui Semua ({selectedIds.length})</span>
+                )}
               </button>
             </div>
           </div>

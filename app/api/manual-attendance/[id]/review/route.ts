@@ -66,18 +66,29 @@ export async function POST(
 
       if (targetReportId) {
         // REPLACE EXISTING REPORT
-        const { error: updateReportError } = await adminClient
+        const updatePayload: any = {
+          timestamp: requestRow.timestamp,
+          location_id: requestRow.location_id,
+          routine_activity: requestRow.routine_activity,
+          incident_activity: requestRow.incident_activity,
+          field_condition: requestRow.field_condition,
+          follow_up: requestRow.follow_up,
+          status: 'submitted',
+        };
+
+        let { error: updateReportError } = await adminClient
           .from('reports')
           .update({
-            timestamp: requestRow.timestamp,
-            location_id: requestRow.location_id,
-            routine_activity: requestRow.routine_activity,
-            incident_activity: requestRow.incident_activity,
-            field_condition: requestRow.field_condition,
-            follow_up: requestRow.follow_up,
-            status: 'submitted',
+            ...updatePayload,
+            is_manual: true,
+            manual_reason: requestRow.reason || null,
           })
           .eq('id', targetReportId);
+
+        if (updateReportError) {
+          const retry = await adminClient.from('reports').update(updatePayload).eq('id', targetReportId);
+          updateReportError = retry.error;
+        }
 
         if (updateReportError) {
           console.error('Error updating existing report:', updateReportError);
@@ -98,31 +109,49 @@ export async function POST(
         }
       } else {
         // INSERT NEW REPORT
-        const { data: newReport, error: insertReportError } = await adminClient
+        const insertPayload: any = {
+          user_id: requestRow.user_id,
+          session_type: requestRow.session_type,
+          report_date: requestRow.report_date,
+          timestamp: requestRow.timestamp,
+          location_id: requestRow.location_id,
+          routine_activity: requestRow.routine_activity,
+          incident_activity: requestRow.incident_activity,
+          field_condition: requestRow.field_condition,
+          follow_up: requestRow.follow_up,
+          status: 'submitted',
+        };
+
+        let newReportId: string | null = null;
+        const resWithFlag = await adminClient
           .from('reports')
           .insert({
-            user_id: requestRow.user_id,
-            session_type: requestRow.session_type,
-            report_date: requestRow.report_date,
-            timestamp: requestRow.timestamp,
-            location_id: requestRow.location_id,
-            routine_activity: requestRow.routine_activity,
-            incident_activity: requestRow.incident_activity,
-            field_condition: requestRow.field_condition,
-            follow_up: requestRow.follow_up,
-            status: 'submitted',
+            ...insertPayload,
+            is_manual: true,
+            manual_reason: requestRow.reason || null,
           })
           .select('id')
-          .single();
+          .maybeSingle();
 
-        if (insertReportError || !newReport) {
-          console.error('Error creating new report from manual attendance:', insertReportError);
-          return NextResponse.json({ error: 'Gagal memasukkan data presensi baru ke database' }, { status: 500 });
+        if (resWithFlag.data?.id) {
+          newReportId = resWithFlag.data.id;
+        } else {
+          const resFallback = await adminClient
+            .from('reports')
+            .insert(insertPayload)
+            .select('id')
+            .single();
+
+          if (resFallback.error || !resFallback.data) {
+            console.error('Error creating new report from manual attendance:', resFallback.error);
+            return NextResponse.json({ error: 'Gagal memasukkan data presensi baru ke database' }, { status: 500 });
+          }
+          newReportId = resFallback.data.id;
         }
 
         // Attach files to new report
         const filesToInsert = (requestRow.manual_attendance_files || []).map((f: any) => ({
-          report_id: newReport.id,
+          report_id: newReportId,
           file_name: f.file_name,
           file_type: f.file_type,
           drive_file_id: f.drive_file_id,
